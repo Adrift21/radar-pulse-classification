@@ -1,0 +1,126 @@
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ============================================
+# IDE / Editor
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# MATLAB
+# ============================================
+*.asv
+*.m~
+*.mex*
+slprj/
+*.mat.bak
+
+# ============================================
+# Veri ve Model Dosyaları (ÇOK ÖNEMLİ)
+# ============================================
+# Sentetik veri (yeniden üretilebilir, GitHub'da yer kaplar)
+data_generation/synthetic_samples/*
+!data_generation/synthetic_samples/.gitkeep
+
+# Eğitim çıktıları
+experiments/checkpoints/*
+!experiments/checkpoints/.gitkeep
+experiments/results/*
+!experiments/results/.gitkeep
+
+# Model ağırlıkları
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+*.onnx
+*.pb
+
+# Büyük veri formatları
+*.npy
+*.npz
+*.mat
+*.tfrecord
+*.parquet
+
+# ============================================
+# Loglar ve geçici dosyalar
+# ============================================
+*.log
+logs/
+tensorboard_logs/
+runs/
+wandb/
+mlruns/
+
+# ============================================
+# Doküman geçici dosyaları
+# ============================================
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.fdb_latexmk
+paper/**/*.fls
+paper/**/*.log
+paper/**/*.out
+paper/**/*.synctex.gz
+paper/**/*.toc
+
+# ============================================
+# OS
+# ============================================
+desktop.ini
+
+# ============================================
+# Kişisel/lokal config (paylaşılmayacak)
+# ============================================
+configs/local.yaml
+.env
+secrets.yaml
