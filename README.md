@@ -70,9 +70,9 @@ radar-pulse-classification/
 
 
 
-\- Python 3.10+
+\- Python 3.11+
 
-\- PyTorch 2.0+ (CUDA recommended)
+\- PyTorch 2.6+ (CUDA recommended)
 
 \- MATLAB R2022a+ (for synthetic data generation)
 
