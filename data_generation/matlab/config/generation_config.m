@@ -35,6 +35,18 @@ function cfg = generation_config()
     cfg.padding_strategy = 'random';
 
     % ------------------------------------------------------------------
+    % Class-specific overrides
+    % ------------------------------------------------------------------
+    % All polyphase codes (Frank, P1, P2, P3, P4) need a wider lower
+    % bound on pulse width to keep chip oversampling adequate at N=8
+    % (64 chips). With T_min = 4 us and fs = 100 MHz:
+    % T_c = 4e-6/64 = 62.5 ns -> ~6.25 samples/chip, the minimum
+    % acceptable for stable phase rendering. See decisions.md
+    % (2026-05-04 Frank and P1-P4 entries).
+    cfg.polyphase_pulse_width_us = [4, 20];
+    cfg.polyphase_pulse_width_s  = cfg.polyphase_pulse_width_us * 1e-6;
+
+    % ------------------------------------------------------------------
     % Carrier / IF parameters
     % ------------------------------------------------------------------
     % Working in complex baseband (I/Q). Carrier frequency is the offset

@@ -184,6 +184,42 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
+## 2026-05-04 — Barker Kod Karışımı: B7 + B11 + B13, Rectangular Chip
+
+- **Karar:** Barker sınıfı için her örnekte rastgele B7, B11 veya B13 kodu seçilecek (eşit olasılıkla, %33-%33-%33). Chip şekli rectangular (filtresiz, anlık faz atlamaları). Chip süresi $T_c = T/N$ (önce pulse width $T$ seçilir, kod uzunluğu $N$'e bölünür).
+- **Gerekçe:** B7/B11/B13 üçlüsü literatürde "the Barker codes" olarak bilinen kanonik küme; B2-B5 çok kısa ve gerçek sistemlerde nadir. Eşit olasılık dağılımı modelin tek bir kod uzunluğuna overfit olmasını engeller. Rectangular chip akademik baseline; sınıflar arası adillik için tercih edildi (LFM/NLFM'de de transmitter filter modellenmedi). $T_c = T/N$ ilişkisi `cfg.pulse_width_s` aralığını LFM/NLFM ile tutarlı tutar.
+- **Alternatifler:** Sadece B13 (literatür yaygın ama tek-noktalı), tüm Barker kodları B2-B13 (akademik tamlık ama B2-B5 gerçekçi değil), raised-cosine veya Gaussian filtered chip (gerçekçi ama "hangi filter, neden?" sorularını açar), $T_c$ önce seçip $T = N \cdot T_c$ (pulse width dağılımı koda bağımlı olur, confusion matrix'te yan etki).
+- **Sonuç/Etki:** `generate_barker.m` her çağrıda rastgele kod seçer, kullanılan kod `params.code_name` (B7/B11/B13) alanına yazılır. Modül B'de TF gösterim çözünürlüğü Barker'ın CW'den ayrılması için kritik — chip geçişlerinin spektrumda görünür olması gerekir.
+
+---
+
+## 2026-05-04 — Frank Polyphase: N ∈ {4,6,8}, fc=0, Genişletilmiş Pulse Width
+
+- **Karar:** Frank polyphase kod sınıfı için üç parametre:
+  - **Matris boyutu N**: {4, 6, 8} kümesinden eşit olasılıkla rastgele (toplam chip sayısı $N^2$ → 16/36/64)
+  - **Carrier frekansı**: $f_c = 0$ (saf complex baseband, ekstra carrier modülasyonu yok)
+  - **Pulse width**: Frank'a özel [4, 20] µs aralığı (LFM/NLFM/Barker [1, 20] korunur)
+- **Gerekçe:** N karışımı Barker'daki 3-kod yaklaşımı ile **tutarlı**; modelin tek bir matris boyutuna overfit olmasını engeller. N=5,7 (asal) literatürde nadir, eklenmedi. fc=0 seçimi: Frank'ın karakteristik TF imzası faz matrisinden gelir, carrier eklemek imzayı maskeler ve sınıflar arası ayırt ediciliği azaltır. Genişletilmiş pulse width ($T \geq 4$ µs): N=8 (64 chip) ile T=1 µs olsaydı $T_c = 15.6$ ns → 100 MHz örneklemede chip başına sadece 1.56 örnek olurdu (yetersiz). T=4 µs alt sınırı en kötü durumda chip başına 6.25 örnek garantiler.
+- **Alternatifler:** Sabit N=8 (en yaygın baseline ama monolitik), N ∈ {4,5,6,7,8} (asal değerler eklenir, Frank için literatürde nadir), fc rastgele (Barker'daki gibi, ama imza maskeleme problemi), [1,20] µs aralığı (chip undersampling sorunu).
+- **Sonuç/Etki:** `cfg.frank_pulse_width_s = [4e-6, 20e-6]` yeni bir config alanı. Diğer sınıflar `cfg.pulse_width_s`'i kullanmaya devam eder. `generate_frank.m` her çağrıda rastgele N seçer; `params.N`, `params.num_chips`, `params.phase_matrix` alanlarına yazılır. Frank-özel pulse width nedeniyle confusion matrix'te Frank örneklerinin pulse width dağılımı diğer sınıflardan biraz farklı olacak — bu kabul edilebilir çünkü model sınıflandırma yapıyor, pulse width regresyonu değil.
+
+---
+
+## 2026-05-04 — P1-P4 Polyphase: Tüm Alt-Kodlar, fc=0, Ortak Pulse Width
+
+- **Karar:** Polyphase sınıfı için dört alt-kod eşit olasılıkla rastgele seçilecek (her biri %25):
+  - **P1 (Lewis-Kretschmer):** $\phi_{m,n} = -\frac{\pi}{N}(N - (2n-1))((n-1)N + (m-1))$
+  - **P2 (Lewis-Kretschmer, palindromik):** $\phi_{m,n} = -\frac{\pi}{2N}(2m-1-N)(2n-1-N)$
+  - **P3 (LFM yaklaşımı):** $\phi_k = \frac{\pi (k-1)^2}{N_c}, \, k=1..N_c$
+  - **P4 (LFM yaklaşımı, lineer offset):** $\phi_k = \frac{\pi (k-1)^2}{N_c} - \pi(k-1)$
+- N matris boyutu Frank ile aynı: {4, 6, 8} (P2 için çift olma şartı zaten sağlanıyor). $N_c = N^2$. Carrier $f_c = 0$. Pulse width Frank ile paylaşılır.
+- **Konfigürasyon değişikliği:** `cfg.frank_pulse_width_s` → `cfg.polyphase_pulse_width_s` olarak yeniden adlandırılır (Frank dahil tüm polyphase ailesi paylaşır). `generate_frank.m` küçük bir güncelleme alır.
+- **Gerekçe:** Dört alt-kod akademik tamlık için zorunlu — reviewer "neden P2 yok?" sorusunu kapatır. P3 ve P4 aslında **discretized LFM** karakterli (literatürde "stepped approximation of chirp"); bu, modelin "P3/P4 vs LFM" ayrımını öğrenmesini zorlaştırır → makalenin "fine-grained classification" hikâyesini güçlendirir. P1 ve P2 ise Frank'a yakın (matris tabanlı discrete fazlar), bu da "polyphase ailesi içinde Frank'tan ayırt etme" zorluğu yaratır. fc=0 Frank ile tutarlı (faz imzasını maskelememek için). Ortak pulse width aralığı [4,20] µs Polyphase ailesi için chip oversampling garanti eder.
+- **Alternatifler:** Sadece P3+P4 (basit ama kapsayıcılık eksik), P1+P3+P4 (P2'yi atla, ama akademik tamlık zarar görür), P kodlarını ayrı sınıflar yap (8 sınıf hedefini bozar; orijinal plan birleşik), fc rastgele (Frank ile tutarsız).
+- **Sonuç/Etki:** `generate_polyphase.m` her çağrıda rastgele alt-kod seçer; `params.subcode` (P1/P2/P3/P4), `params.N`, `params.num_chips` alanlarına yazılır. Confusion matrix'te alt-kod breakdown'u opsiyonel olarak çıkarılabilir (debug için). Toplam 8 sınıf hedefi korunur.
+
+---
+
 ## YYYY-MM-DD — [Sonraki Karar Buraya]
 
 <!-- Şablon:
@@ -208,8 +244,8 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ### Modül A için Yeni Açık Sorular:
 - [x] ~~Padding stratejisi~~ → **Random** (LFM testinde doğrulandı, 2026-05-04)
-- [ ] **P1-P4 sınıfı:** Tek birleşik sınıf mı, 4 ayrı alt sınıf mı? (8 sınıf hedefini etkiler)
-- [ ] **Barker kod uzunlukları:** Sadece B13 mü, yoksa B7+B11+B13 karışımı mı?
+- [x] ~~P1-P4 sınıfı~~ → **Tek birleşik sınıf, P1+P2+P3+P4 karışımı (%25 eşit)** (2026-05-04)
+- [x] ~~Barker kod uzunlukları~~ → **B7 + B11 + B13 karışımı, rectangular chip** (2026-05-04)
 - [ ] **Costas dizi uzunluğu:** Sabit (örn. N=7) mi, değişken mi?
 - [x] ~~Frekans aralığı (carrier)~~ → **Complex baseband, fc ∈ [1, 20] MHz, %5 guard band** (config'de tanımlı, 2026-05-04)
 - [x] ~~AWGN'in eklendiği nokta~~ → **Padding sonrası tam frame'e, SNR aktif bölge gücüne göre** (2026-05-04)

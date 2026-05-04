@@ -44,9 +44,10 @@ function [signal, params] = generate_frank(cfg)
 %
 % Notes
 % -----
-% - Uses cfg.frank_pulse_width_s (default [4, 20] us) instead of the
-%   shared cfg.pulse_width_s, to guarantee >= 6 samples/chip even at
-%   N=8 (64 chips) and the minimum pulse width.
+% - Uses cfg.polyphase_pulse_width_s (default [4, 20] us, shared with
+%   P1-P4) instead of the generic cfg.pulse_width_s, to guarantee
+%   >= 6 samples/chip even at N=8 (64 chips) and the minimum pulse
+%   width.
 % - The phase matrix is exact (multiples of 2*pi/N); chip flips are
 %   instantaneous, like Barker. No pulse-shaping filter (consistent
 %   with Barker's rectangular chip decision).
@@ -69,10 +70,11 @@ function [signal, params] = generate_frank(cfg)
     phase_sequence = reshape(phase_matrix.', 1, []);   % (1 x N^2)
 
     % ------------------------------------------------------------------
-    % 3) Sample pulse width from Frank-specific range
+    % 3) Sample pulse width from the shared polyphase range
+    %    (renamed from frank_pulse_width_s when P1-P4 added)
     % ------------------------------------------------------------------
-    pw_min = cfg.frank_pulse_width_s(1);
-    pw_max = cfg.frank_pulse_width_s(2);
+    pw_min = cfg.polyphase_pulse_width_s(1);
+    pw_max = cfg.polyphase_pulse_width_s(2);
     T = pw_min + (pw_max - pw_min) * rand();
 
     % ------------------------------------------------------------------
