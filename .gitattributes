@@ -1,0 +1,82 @@
+# ============================================
+# Line ending normalization
+# ============================================
+# Default behavior: normalize text files to LF in the repo,
+# checkout with native line endings on each platform.
+* text=auto eol=lf
+
+# ============================================
+# Source code (force LF, even on Windows checkout)
+# ============================================
+*.py        text eol=lf
+*.m         text eol=lf
+*.mat       binary
+*.mlx       binary
+*.ipynb     text eol=lf
+
+# ============================================
+# Configuration & data formats
+# ============================================
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.json      text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+
+# ============================================
+# Documentation
+# ============================================
+*.md        text eol=lf
+*.txt       text eol=lf
+*.rst       text eol=lf
+*.tex       text eol=lf
+*.bib       text eol=lf
+
+# ============================================
+# Shell & build scripts
+# ============================================
+*.sh        text eol=lf
+*.bash      text eol=lf
+Makefile    text eol=lf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# ============================================
+# Binary files (do not normalize, do not diff)
+# ============================================
+*.h5        binary
+*.hdf5      binary
+*.npy       binary
+*.npz       binary
+*.pkl       binary
+*.pth       binary
+*.pt        binary
+*.ckpt      binary
+*.onnx      binary
+*.pb        binary
+*.tfrecord  binary
+*.parquet   binary
+
+# Images
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.bmp       binary
+*.tiff      binary
+*.svg       text eol=lf
+
+# Archives
+*.zip       binary
+*.tar       binary
+*.gz        binary
+*.7z        binary
+*.rar       binary
+
+# ============================================
+# Linguist overrides (GitHub language detection)
+# ============================================
+# Don't count generated/vendored files toward language statistics.
+notebooks/* linguist-vendored
+paper/**    linguist-documentation
