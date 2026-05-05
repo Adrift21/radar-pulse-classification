@@ -267,6 +267,37 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
+## 2026-05-04 — Ana Üretim Döngüsü: Sıralı, Per-Sample Seed, AWGN Ayrı, HDF5 Metadata
+
+- **Karar:** `main_generate_dataset.m` ana döngüsü için beş tasarım kararı:
+  1. **Üretim sırası**: Sıralı (önce 5000 LFM → 5000 NLFM → ... → 5000 Stepped). Sınıflar arası shuffle Python tarafında train/val/test split sırasında yapılacak.
+  2. **Per-sample seed**: Her örnek üretilmeden önce `rng(master_seed + global_sample_idx, 'twister')` çağrılır. Her sinyal bağımsız reproducible — "sample #1234'ü tek başına yeniden üret" mümkün.
+  3. **Progress reporting**: `cfg.progress_every = 500` ile her 500 örnekte ilerleme yazdır (sınıf adı, sample sayacı, tahmini kalan süre).
+  4. **AWGN ayrı tutulur**: HDF5'e **temiz sinyaller + intended SNR değerleri** kaydedilir. Gerçek AWGN Python tarafında okuma sırasında eklenir. Avantaj: Aynı temiz sinyalden farklı epoch'larda farklı gürültü seedleri ile augmentation, Modül B/C esnek SNR stratejisi seçebilir, disk alanı azalmaz (temiz sinyal aynı boyut).
+  5. **HDF5 dataset şeması**: Minimum + temel metadata.
+  
+  ```
+  dataset.h5
+  ├── /signals        (40000, 2048) complex64    [clean signals]
+  ├── /labels         (40000,)      uint8        [class index 0-7]
+  ├── /snr_db         (40000,)      float32      [intended SNR per sample]
+  ├── /pulse_widths_us (40000,)     float32      [actual pulse width]
+  ├── /class_names    (8,)          string       [class label strings]
+  └── attributes:
+      ├── sample_rate_hz       (100e6)
+      ├── signal_length        (2048)
+      ├── master_seed          (42)
+      ├── generation_date      (ISO timestamp)
+      ├── dataset_version      ('0.1.0')
+      ├── samples_per_class    (5000)
+      └── num_classes          (8)
+  ```
+- **Gerekçe:** Sıralı üretim debugging için kolay, ayrıca train/test split kütüphaneleri (sklearn) shuffle parametresiyle bu sorunu zaten çözüyor. Per-sample seed: akademik makalelerde reviewer "tek bir yanlış sınıflandırılan örneği inceleyelim" diyebilir, bu durumda örnek tek başına üretilebilmeli. AWGN ayrı tutmak: aynı temiz sinyalden farklı augmentation'lar üretmek modelin genelleşmesine yardım eder; ayrıca Modül B'de TF gösterimini hesaplamadan önce gürültüyü ekleyip eklememe esnekliği kalır. HDF5 metadata: temel attribute'lar yeterli, full per-sample params struct (random direction, B, fc, vb.) gereksiz çünkü per-sample seed ile üretici fonksiyon tekrar çağrılarak elde edilebilir — disk alanı verimli.
+- **Alternatifler:** Karışık üretim (interleaved — implementasyon karmaşık, debugging zor), tek global seed (bağımsız örnek üretimi imkansız), AWGN ana döngüde (esnek değil), tüm params struct'ı kaydet (40000 × ~10 alan, GB'larca yer), her sınıfa ayrı dosya (split logic karmaşık), küçük chunk'lar halinde HDF5 yazma (fancy ama gereksiz).
+- **Sonuç/Etki:** İki yeni dosya: `main_generate_dataset.m` (ana giriş noktası, ~80 satır) + `utils/save_dataset_h5.m` (HDF5 export, ~70 satır). Dataset üretimi tek seferlik ~5-15 dakika sürer (donanıma bağlı), `synthetic_samples/dataset.h5` ~280-400 MB civarında olur (40000 × 2048 × 8 byte complex64 + metadata, sıkıştırılmamış). Modül B Python tarafında `h5py` veya `mat73` ile okuyacak.
+
+---
+
 ## YYYY-MM-DD — [Sonraki Karar Buraya]
 
 <!-- Şablon:
