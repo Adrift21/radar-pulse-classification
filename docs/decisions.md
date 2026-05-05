@@ -220,6 +220,24 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
+## 2026-05-04 — Costas Frequency Hopping: N ∈ {5,6,7,8}, Sembolik Diziler, Simetrik Baseband
+
+- **Karar:** Costas sınıfı için beş parametre:
+  - **N (kod uzunluğu)**: {5, 6, 7, 8} kümesinden eşit olasılıkla rastgele seçilir
+  - **Costas dizisi**: Her N için 2 önceden tanımlı kanonik dizi, çağrı başına rastgele seçilir (toplam 8 dizi):
+    - N=5: `[3,1,4,2,5]`, `[2,4,1,5,3]`
+    - N=6: `[4,1,6,3,5,2]`, `[5,2,1,3,6,4]`
+    - N=7: `[4,7,1,6,5,2,3]`, `[3,2,5,7,4,1,6]`
+    - N=8: `[3,5,8,7,2,1,4,6]`, `[5,7,2,8,3,1,4,6]`
+  - **Frekans adımı Δf**: [2, 5] MHz aralığında uniform rastgele
+  - **Pulse width**: Generic [1, 20] µs (LFM/NLFM/Barker ile ortak `cfg.pulse_width_s`)
+  - **Frekans yerleşimi**: Simetrik baseband, $f_k = (\pi(k) - (N+1)/2) \cdot \Delta f$ → frekanslar 0 etrafında ortalanır
+- **Gerekçe:** N ∈ {5,6,7,8} aralığı literatürde standart Costas radarı (N=3,4 çok kısa, N≥9 araştırma odaklı çeşitlilik fazla varyans yaratır). Her N için 2 dizi yeterli çeşitlilik sağlar; tüm bilinen Costas dizilerini (örn. N=7 için 200 dizi) kullanmak gereksiz, model "Costas örüntüsü" kavramını az örnekle de öğrenir. Δf [2,5] MHz aralığı: N=8 ile en kötü 40 MHz toplam bandwidth (100 MHz fs için %5 guard band'i koruyarak yeterli), N=5 ile en küçük 10 MHz (chip blokları görsel olarak ayırt edilebilir). Generic pulse width: N max 8 olduğundan T=1 µs ile bile $T_c$=125 ns → 12.5 örnek/chip, polyphase'in N²=64 chip'inden çok rahat. Simetrik baseband: Frank/Polyphase'deki fc=0 mantığı ile tutarlı, TF imzası net görünür.
+- **Alternatifler:** Tek N (sabit N=7 yaygın ama monolitik), tüm bilinen Costas dizilerini kullan (gereksiz çeşitlilik), Welch-Costas otomatik üretim (N kümesi p-1 olanlarla sınırlı, esnek değil), tek frekans adımı Δf sabit (daha az çeşitlilik), asimetrik frekans yerleşimi $f_k = (\pi(k)-1) \cdot \Delta f$ (taban DC'de, simetrisiz).
+- **Sonuç/Etki:** `generate_costas.m` her çağrıda rastgele N + dizi + Δf seçer; `params.N`, `params.sequence`, `params.delta_f_hz`, `params.frequencies_hz` alanlarına yazılır. TF gösterimde (Modül B) N adet kısa "blok" zaman-frekans düzleminde dağılır — Costas'ın imza işareti. Bu desen modelin diğer 5 sınıftan ayırt etmesi için zayıf görünebilir ama düşük SNR'de blokların tespiti zorlaşır → SNR robustness analizinde Costas'ın eğrisi farklı davranabilir, bu da makaleye bilgi katar.
+
+---
+
 ## YYYY-MM-DD — [Sonraki Karar Buraya]
 
 <!-- Şablon:
@@ -246,6 +264,6 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 - [x] ~~Padding stratejisi~~ → **Random** (LFM testinde doğrulandı, 2026-05-04)
 - [x] ~~P1-P4 sınıfı~~ → **Tek birleşik sınıf, P1+P2+P3+P4 karışımı (%25 eşit)** (2026-05-04)
 - [x] ~~Barker kod uzunlukları~~ → **B7 + B11 + B13 karışımı, rectangular chip** (2026-05-04)
-- [ ] **Costas dizi uzunluğu:** Sabit (örn. N=7) mi, değişken mi?
+- [x] ~~Costas dizi uzunluğu~~ → **N ∈ {5,6,7,8}, her N için 2 dizi, Δf rastgele [2,5] MHz** (2026-05-04)
 - [x] ~~Frekans aralığı (carrier)~~ → **Complex baseband, fc ∈ [1, 20] MHz, %5 guard band** (config'de tanımlı, 2026-05-04)
 - [x] ~~AWGN'in eklendiği nokta~~ → **Padding sonrası tam frame'e, SNR aktif bölge gücüne göre** (2026-05-04)
