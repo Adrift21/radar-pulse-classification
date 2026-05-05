@@ -238,6 +238,35 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
+## 2026-05-04 — CW (Continuous Wave): Generic Pulse Width, Rastgele fc, Rastgele Initial Phase
+
+- **Karar:** CW sınıfı için üç parametre:
+  - **Pulse width**: Generic `cfg.pulse_width_s` aralığı [1, 20] µs (LFM/NLFM/Barker ile aynı)
+  - **Carrier frekansı $f_c$**: Rastgele $[-f_{max}, +f_{max}]$, $f_{max} = f_s/2 - 0.05 f_s$ (LFM ile aynı %5 guard band)
+  - **Başlangıç fazı $\phi_0$**: Rastgele $U[0, 2\pi)$
+  - Sinyal modeli: $s(t) = e^{j(2\pi f_c t + \phi_0)}$ (tek frekanslı complex baseband)
+- **Gerekçe:** Generic pulse width: CW örnekleri sadece pulse width ile diğer sınıflardan ayırt edilmesin (adil karşılaştırma). Rastgele fc: Frank/Polyphase fc=0 kullanıyor; CW de fc=0 olsaydı N=4 Frank'ın ilk satırıyla DC civarında karışabilirdi. Geniş fc aralığı modelin "spektrogramda tek yatay çizgi" örüntüsünü frekans-bağımsız öğrenmesini sağlar. Rastgele $\phi_0$: gerçek transmitter'lar koherent değil; padding zaten rastgele konumda, faz da rastgele olunca model padding/phase ipuçlarına overfit olmaz.
+- **Alternatifler:** [10,20] µs (CW genelde uzun ama diğer sınıflarla pulse width ipucu yaratır), tüm frame doluluğu (padding stratejisi tutarsızlığı), sabit fc=0 (Frank ile karışma riski), sabit $\phi_0=0$ (deterministik ama gerçekçi değil), dar fc aralığı (gereksiz kısıt).
+- **Sonuç/Etki:** `generate_cw.m` en kısa generator (~50 satır). `params.f_carrier_hz` ve `params.initial_phase` alanlarına yazılır. TF imzası: spektrogramda **tek yatay parlak çizgi**, tüm darbe boyunca sabit frekans. Costas ile ayırt etme: Costas N farklı yatay seviyede kısa bloklar, CW tek seviye uzun bant. -10 dB'de tek çizgi gürültüye gömülür → SNR robustness eğrisinde CW yüksek SNR'da kolay, düşük SNR'da diğerleri kadar zor.
+
+---
+
+## 2026-05-04 — Stepped/FH (Stepped Frequency): Costas-Tutarlı Parametreler, Monotonik Sıralama
+
+- **Karar:** Stepped Frequency sınıfı için altı parametre:
+  - **N (chip sayısı)**: {5, 6, 7, 8} eşit olasılıkla (Costas ile aynı set)
+  - **Yön (direction)**: %50 up, %50 down (LFM up/down ile tutarlı)
+  - **Frekans adımı Δf**: Rastgele [2, 5] MHz (Costas ile aynı)
+  - **Başlangıç frekansı $f_{start}$**: Rastgele, ancak son frekans $f_{start} + (N-1)\Delta f$ Nyquist guard band'i içinde kalacak şekilde
+  - **Pulse width**: Generic [1, 20] µs (LFM/CW/Costas ile aynı)
+  - **Phase continuity**: Costas'taki gibi chip geçişlerinde sürekli faz, sinc artifaktları önlenir
+  - Sinyal modeli: $f_k = f_{start} + (k-1)\Delta f$ (up) veya $f_k = f_{start} - (k-1)\Delta f$ (down), $k=1..N$
+- **Gerekçe:** Stepped frequency aslında **discretized LFM** karakterli (sürekli LFM yerine basamaklı yaklaşım). Costas ile aynı parametre seti hem ailesel tutarlılık hem TF imzasının doğrudan karşılaştırılabilirliği sağlar. **Costas ile farkı:** Costas frekansları rastgele permütasyondadır (dağınık bloklar), Stepped frekansları monotonik sıralı (basamak/merdiven). Bu farklılık modelin "Costas vs Stepped" ayrımını yapması için sınıflar arası net bir görsel ipucu sağlar. Rastgele $f_{start}$ + monotonik step → gerçek FH radar davranışına yakın (belirli RF bandını tarama). Phase continuity Costas ile mutlak tutarlılık için.
+- **Alternatifler:** Sabit yön (sadece up — gerçekçi değil), simetrik baseband (Costas ile birebir aynı, Stepped'ı ayırt edici özelliği zayıflatır), discrete $f_{start}$ kümesi (esnek değil), naif phase switching (sinc artifaktları, görsel kalite düşer), N kümesini farklılaştırma (gereksiz tutarsızlık).
+- **Sonuç/Etki:** `generate_stepped_fh.m` Costas generator'üne mimari olarak benzer ama frekans ataması farklı. `params.N`, `params.direction`, `params.delta_f_hz`, `params.f_start_hz`, `params.frequencies_hz` alanlarına yazılır. TF imzası: spektrogramda **monotonik basamak/merdiven** (yukarı veya aşağı). LFM ile karışma riski var (her ikisi de monoton frekans değişimi) — ama LFM sürekli, Stepped basamaklı; CNN/ViT bu farkı TF gösterimin çözünürlüğüne göre öğrenecek. Modül A'nın 8. ve son sınıfı; bu kararla Modül A açık soruları kapanır.
+
+---
+
 ## YYYY-MM-DD — [Sonraki Karar Buraya]
 
 <!-- Şablon:
