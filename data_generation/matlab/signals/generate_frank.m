@@ -1,4 +1,4 @@
-function [signal, params] = generate_frank(cfg)
+    function [signal, params] = generate_frank(cfg)
 % GENERATE_FRANK  Synthesize a single Frank polyphase-coded pulse.
 %
 % Frank codes are an N-phase generalization of binary phase codes
