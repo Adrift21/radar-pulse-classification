@@ -309,21 +309,36 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
-## ❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
+❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
 
-- [x] ~~Sample rate: 100 MHz mi 200 MHz mi?~~ → **100 MHz** (2026-05-04)
-- [x] ~~Pulse width aralığı~~ → **1-20 µs, 2048 örnek sabit uzunluk** (2026-05-04)
-- [x] ~~Sınıf başına örnek sayısı~~ → **5000, SNR rastgele** (2026-05-04)
-- [x] ~~SNR adım büyüklüğü~~ → **2 dB, 16 nokta** (2026-05-04)
-- [x] ~~Train/Val/Test bölünmesi~~ → **70/15/15** (2026-05-04)
-- [x] ~~Class balance~~ → **Tam dengeli** (2026-05-04)
-- [x] ~~Dosya formatı~~ → **HDF5 (.h5)** (2026-05-04)
-- [x] ~~Random seed yönetimi~~ → **Global 42, katmanlı** (2026-05-04)
+ Sample rate: 100 MHz mi 200 MHz mi? → 100 MHz (2026-05-04)
+ Pulse width aralığı → 1-20 µs, 2048 örnek sabit uzunluk (2026-05-04)
+ Sınıf başına örnek sayısı → 5000, SNR rastgele (2026-05-04)
+ SNR adım büyüklüğü → 2 dB, 16 nokta (2026-05-04)
+ Train/Val/Test bölünmesi → 70/15/15 (2026-05-04)
+ Class balance → Tam dengeli (2026-05-04)
+ Dosya formatı → HDF5 (.h5) (2026-05-04)
+ Random seed yönetimi → Global 42, katmanlı (2026-05-04)
 
-### Modül A için Yeni Açık Sorular:
-- [x] ~~Padding stratejisi~~ → **Random** (LFM testinde doğrulandı, 2026-05-04)
-- [x] ~~P1-P4 sınıfı~~ → **Tek birleşik sınıf, P1+P2+P3+P4 karışımı (%25 eşit)** (2026-05-04)
-- [x] ~~Barker kod uzunlukları~~ → **B7 + B11 + B13 karışımı, rectangular chip** (2026-05-04)
-- [x] ~~Costas dizi uzunluğu~~ → **N ∈ {5,6,7,8}, her N için 2 dizi, Δf rastgele [2,5] MHz** (2026-05-04)
-- [x] ~~Frekans aralığı (carrier)~~ → **Complex baseband, fc ∈ [1, 20] MHz, %5 guard band** (config'de tanımlı, 2026-05-04)
-- [x] ~~AWGN'in eklendiği nokta~~ → **Padding sonrası tam frame'e, SNR aktif bölge gücüne göre** (2026-05-04)
+Modül A için Açık Sorular (kapandı):
+
+ Padding stratejisi → Random (LFM testinde doğrulandı, 2026-05-04)
+ P1-P4 sınıfı → Tek birleşik sınıf, P1+P2+P3+P4 karışımı (%25 eşit) (2026-05-04)
+ Barker kod uzunlukları → B7 + B11 + B13 karışımı, rectangular chip (2026-05-04)
+ Costas dizi uzunluğu → N ∈ {5,6,7,8}, her N için 2 dizi, Δf rastgele [2,5] MHz (2026-05-04)
+ Frekans aralığı (carrier) → Complex baseband, fc ∈ [1, 20] MHz, %5 guard band (config'de tanımlı, 2026-05-04)
+ AWGN'in eklendiği nokta → Padding sonrası tam frame'e, SNR aktif bölge gücüne göre (2026-05-04)
+
+Modül B için Açık Sorular:
+
+ AWGN stratejisi (pre-compute vs on-the-fly) → On-the-fly, runtime'da DataLoader içinde (2026-05-05)
+ HDF5 storage convention (MATLAB column-major) → Python tarafında transpose ile uyumla (2026-05-05)
+ STFT backend (scipy vs torch) → scipy (Modül C'de torch wrapper eklenecek) (2026-05-05)
+ STFT çıktı tipi (complex vs magnitude) → Complex (2026-05-05)
+ STFT parametreleri (win/hop/n_fft/window) → 256/32/256/Hann (2026-05-05)
+ Görsel doğrulama metodolojisi → Longest-pulse seçim + istatistik tablosu (2026-05-05)
+ CWD parametreleri — kütüphane (tftb vs custom), sigma değeri (cross-term suppression), kernel boyutu
+ WVD parametreleri — analytic signal kullanımı (Hilbert transform), smoothing penceresi, cross-term yönetimi
+ dB-scale + normalizasyon stratejisi — STFT/CWD/WVD üçü için ortak normalizasyon (per-sample max-normalize? global percentile? z-score?)
+ Görüntü dönüşümü — 224×224'e resize stratejisi (bilinear/bicubic), tek kanal mı RGB mi (colormap), float32 mi uint8 mi
+ PyTorch Dataset/DataLoader mimarisi — split (sklearn stratified), augmentation, seed yönetimi (worker_init_fn)
