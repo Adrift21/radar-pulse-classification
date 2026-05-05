@@ -40,7 +40,7 @@ for k = 1:4
     active = false(cfg.N,1);
     active(p.start_idx:p.stop_idx) = true;
     inst_freq(~active) = NaN;
-    plot(t, inst_freq/1e6, 'k'); xlabel('t [\mus]'); ylabel('f_{inst} [MHz]');
+    plot(t, inst_freq/1e6, 'w', 'LineWidth', 1.4); xlabel('t [\mus]'); ylabel('f_{inst} [MHz]');
     title('Instantaneous frequency'); grid on;
 
     % STFT spectrogram

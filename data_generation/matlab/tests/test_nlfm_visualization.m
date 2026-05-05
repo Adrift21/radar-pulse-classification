@@ -43,7 +43,7 @@ for k = 1:6
     active = false(cfg.N,1);
     active(p.start_idx:p.stop_idx) = true;
     inst_freq(~active) = NaN;
-    plot(t, inst_freq/1e6, 'k'); xlabel('t [\mus]'); ylabel('f_{inst} [MHz]');
+    plot(t, inst_freq/1e6, 'w', 'LineWidth', 1.4); xlabel('t [\mus]'); ylabel('f_{inst} [MHz]');
     title(sprintf('Inst. freq (%s)', p.variant)); grid on;
 
     subplot(6, 3, (k-1)*3 + 3);
@@ -92,7 +92,7 @@ for k = 1:3
     inst_freq  = [0; diff(inst_phase)] / (2*pi*cfg.Ts);
     active = false(cfg.N,1); active(p.start_idx:p.stop_idx) = true;
     inst_freq(~active) = NaN;
-    plot(t, inst_freq/1e6, 'k', 'LineWidth', 1.5);
+    plot(t, inst_freq/1e6, 'w', 'LineWidth', 1.5);
     xlabel('t [\mus]'); ylabel('f_{inst} [MHz]');
     title([name, '  -  Instantaneous frequency']); grid on;
 
