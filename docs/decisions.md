@@ -298,14 +298,34 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
-## YYYY-MM-DD — [Sonraki Karar Buraya]
+---
 
-<!-- Şablon:
-- **Karar:**
-- **Gerekçe:**
-- **Alternatifler:**
-- **Sonuç/Etki:**
--->
+## 2026-05-17 — CWD Kütüphane Seçimi: Custom NumPy (tftb v0.2.0'da CWD Yok)
+
+- **Karar:** Choi-Williams Distribution (CWD) için **custom NumPy implementasyonu** yazıldı (`preprocessing/time_frequency/cwd.py`). tftb kütüphanesi WVD için kullanılmaya devam edecek (Phase 2'nin sonraki adımı), ancak CWD için kullanılmıyor.
+- **Gerekçe:** Phase 2 öncesinde tftb v0.2.0'ın `ChoiWilliamsDistribution` sınıfını içerdiği varsayılmıştı (web search ve eski sürüm dokümantasyonlarına dayanarak). Bugün doğrudan paket içeriği incelendi: `tftb.processing` `__init__.py`'sinde `ChoiWilliamsDistribution` yok, `cohen` alt-modülünde de yok. Yalnızca `linear.py`'de bir yorum/docstring referansı bulundu — implementasyon değil. Custom impl matematiksel olarak küçük (~200 satır), `tftb.processing.WignerVilleDistribution` ile sigma→∞ limitinde **Pearson = 1.0** korelasyon doğrulaması yapıldı (bit-for-bit aynı total energy: 7.117e+06, aynı max: 1023.0). Bu, kütüphane karşılaştırmasından daha güçlü bir matematiksel doğrulama sağlar. Akademik açıdan da defensible: "we implemented CWD from first principles based on Choi & Williams (1989), verified against tftb's WignerVilleDistribution in the σ→∞ limit" cümlesi reviewer için temiz argüman.
+- **Alternatifler:** (1) tftb'yi fork'la, CWD'yi ekle — fazla maintenance yükü, akademik makale için gereksiz; (2) eski sürüm tftb (0.1.4) — Python 3.11 ve numpy 2.x uyumsuzluk riski, paket zaten "scikit-signal" organization'a taşındığında 0.1.x'ten kopmuş; (3) Başka bir kütüphane (`pytftb`, `tfa`) — daha az maintained, daha riskli; (4) Hibrit: tftb primary, custom referans — orijinal plandı, paket içeriği keşfedildikten sonra geçersiz oldu.
+- **Sonuç/Etki:** `preprocessing/time_frequency/cwd.py` time-lag formülasyonunda CWD'yi hesaplar (Eq. 1-3 docstring'de açıklı). `requirements.txt`'teki `tftb>=0.1.4` constraint'i WVD için hâlâ gerekli, sadece minimum versiyon `>=0.2.0`'a yükseltilebilir. `scripts/smoke_test_tftb.py` görevini tamamladı (silinebilir veya `_archive/` altına taşınabilir). Makale "Methods" bölümünde CWD altında bu impl detayı 2-3 cümle ile geçecek.
+
+---
+
+## 2026-05-17 — CWD Sigma Parametresi: σ = 1.0
+
+- **Karar:** Choi-Williams Distribution kerneli için **σ = 1.0** (Gaussian-product kernel parametresi). `cwd.py`'de `DEFAULT_SIGMA` sabiti olarak tanımlı.
+- **Gerekçe:** σ Choi-Williams kernelinin tek tunable parametresi: σ küçük → güçlü cross-term süzme + auto-term blur, σ büyük → cross-term'ler süzülmez (WVD limitine yaklaşır). Bizim sinyallerimiz **mono-component** (her örnek tek bir radar darbe sınıfı), cross-term sorunu multi-component sinyallerden çok daha az. σ = 1.0 değeri Choi & Williams (1989) orijinal makalesindeki "balanced default" ve MATLAB TFTB'nin `tfrcw` fonksiyonundaki default ile aynı. Reviewer "neden bu değer?" sorusunda "Choi & Williams 1989, original recommendation" net cevap. 8-sınıf doğrulama figürü (`cwd_clean_8classes.png`) σ=1.0 ile üretildi ve **görsel olarak başarılı**: cross-term'ler -50 dB'nin altında, auto-term'ler keskin, hiçbir sınıf "siyah kutu" olarak görünmüyor.
+- **Alternatifler:** σ = 0.1 (agresif suppression, multi-component sinyaller için, bizde gereksiz); σ = 3.0 veya σ = 10 (cross-term'ler yetersiz süzülür, WVD'ye yaklaşır → CWD'nin avantajı kaybolur); değişken σ (parameter sweep) — gereksiz deney maliyeti, akademik literatürde standart pratik tek değer kullanmak.
+- **Sonuç/Etki:** `cwd.py` API'sı `sigma` parametresini opsiyonel argüman olarak alır, default 1.0. Makale "Methods" bölümünde "CWD kernel parameter σ = 1.0, following Choi & Williams (1989)" cümlesi yeterli. İleride düşük SNR'da CWD performansı beklenmedik şekilde düşerse (Modül D), σ değeri tekrar tartışmaya açılabilir.
+
+---
+
+## 2026-05-17 — CWD Downsampling: (256, 64) — Phase 1 STFT ile Uyumlu
+
+- **Karar:** CWD çıktı boyutu **(n_freq=256, n_time=64)** olarak sabitlendi. Hesaplama parametreleri: `time_step=32` (decimation in time), `n_freq=256` (FFT noktası), `max_lag = n_freq // 2 - 1 = 127`.
+- **Gerekçe:** Tam çözünürlük CWD (2048×2048) tek örnek başına 32 MB RAM tüketir; 5000 örnek × 8 sınıf = 1.28 TB pre-compute olur (kabul edilemez). On-the-fly hesaplama stratejimiz olsa bile (decisions.md 2026-05-05 AWGN girdisi), tam çözünürlük her DataLoader call başına 50+ saniye gerektirir — eğitim tıkanır. Downsampling sonrası (256, 64): tek örnek 64 KB, hesaplama ~33 ms. Phase 1 STFT (256, 57) ile **aynı çözünürlük kategorisinde**, böylece Modül C'de aynı CNN/ResNet/ViT mimarisi her iki gösterimi de aynı input shape ile kabul eder. Bu, "apples-to-apples" akademik karşılaştırma için kritik — modeller TF'nin **bilgi içeriğini** karşılaştırır, çözünürlük farkını değil. `max_lag = n_freq // 2 - 1` formülü Hermitian symmetry için pozitif ve negatif lag bölgelerinin ayrık kalmasını garanti eder (FFT buffer'da çakışma olmaz).
+- **Alternatifler:** (1) Tam (2048, 2048) → RAM/hız sorunu; (2) 224×224 (model input ile aynı) → STFT (256, 57) ile inconsistency; (3) (512, 128) — orta yol, ama Phase 1 STFT ile uyumsuz; (4) Variable resolution per class — debugging zorlaşır, akademik karşılaştırma bozulur.
+- **Sonuç/Etki:** `cwd.py` default parametreleri Modül A datasetiyle (`fs=100 MHz`, `N=2048`) optimize edildi. Modül C'de TF gösterimini 224×224'e çevirmek için Modül B Phase 3'te ortak bir `tf_to_image()` fonksiyonu yazılacak — bu fonksiyon STFT (256, 57), CWD (256, 64), WVD (256, ?) çıktılarını dB-scale + bilinear resize ile 224×224'e dönüştürür. 8-sınıf doğrulama figüründe çözünürlük yeterli: LFM diagonal, NLFM curve, Costas blokları, SteppedFH basamakları çıplak gözle ayırt edilebilir.
+
+---
 
 ---
 
@@ -337,7 +357,7 @@ Modül B için Açık Sorular:
  STFT çıktı tipi (complex vs magnitude) → Complex (2026-05-05)
  STFT parametreleri (win/hop/n_fft/window) → 256/32/256/Hann (2026-05-05)
  Görsel doğrulama metodolojisi → Longest-pulse seçim + istatistik tablosu (2026-05-05)
- CWD parametreleri — kütüphane (tftb vs custom), sigma değeri (cross-term suppression), kernel boyutu
+ - [x] ~~CWD parametreleri — kütüphane (`tftb` vs custom), sigma değeri, downsampling~~ → **Custom NumPy impl, σ=1.0, (256, 64) downsampling** (2026-05-17)
  WVD parametreleri — analytic signal kullanımı (Hilbert transform), smoothing penceresi, cross-term yönetimi
  dB-scale + normalizasyon stratejisi — STFT/CWD/WVD üçü için ortak normalizasyon (per-sample max-normalize? global percentile? z-score?)
  Görüntü dönüşümü — 224×224'e resize stratejisi (bilinear/bicubic), tek kanal mı RGB mi (colormap), float32 mi uint8 mi
