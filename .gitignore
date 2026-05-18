@@ -68,6 +68,7 @@ slprj/
 data_generation/synthetic_samples/*
 !data_generation/synthetic_samples/.gitkeep
 
+
 # Eğitim çıktıları
 experiments/checkpoints/*
 !experiments/checkpoints/.gitkeep
@@ -89,6 +90,11 @@ experiments/results/*
 *.mat
 *.tfrecord
 *.parquet
+
+# Splits istisnası — küçük (~960 KB), reproducibility için git'e dahil (decisions.md 2026-05-18)
+!data_generation/synthetic_samples/splits/
+!data_generation/synthetic_samples/splits/*.npy
+!data_generation/synthetic_samples/splits/*.json
 
 # ============================================
 # Loglar ve geçici dosyalar
