@@ -88,7 +88,7 @@ def compute_stft(
         noverlap=noverlap,
         nfft=n_fft,
         return_onesided=not is_complex,
-        boundary=None,
+        boundary=None,  # type: ignore[arg-type]  # scipy stubs incorrectly type as str-only
         padded=False,
     )
 

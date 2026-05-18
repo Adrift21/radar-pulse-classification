@@ -26,6 +26,7 @@ Project: Radar Pulse Classification (Module B, Phase 2)
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
@@ -199,11 +200,10 @@ def main() -> int:
         cwds.append(cwd_mag)
         t_axes.append(t_axis)
         f_axes.append(f_axis)
-        shape_tuple: Tuple[int, int] = (int(cwd_mag.shape[0]), int(cwd_mag.shape[1]))
         stats_rows.append(
             (
                 class_names[cls],
-                shape_tuple,
+                tuple(cwd_mag.shape),
                 float(cwd_mag.min()),
                 float(cwd_mag.max()),
                 bool(np.any(np.isnan(cwd_mag))),

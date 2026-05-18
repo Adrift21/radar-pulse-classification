@@ -46,7 +46,7 @@ for k = 1:6
     active(p.start_idx:p.stop_idx) = true;
     inst_phase_plot = inst_phase;
     inst_phase_plot(~active) = NaN;
-    plot(t, inst_phase_plot, 'k');
+    plot(t, inst_phase_plot, 'w', 'LineWidth', 1.2);
     xlabel('t [\mus]'); ylabel('phase [rad]');
     title('Unwrapped phase'); grid on;
 
@@ -149,7 +149,7 @@ for k = 1:3
         inst_freq  = [0; diff(inst_phase)] / (2*pi*cfg.Ts);
         active = false(cfg.N,1); active(p.start_idx:p.stop_idx) = true;
         inst_freq(~active) = NaN;
-        plot(t, inst_freq/1e6, 'k', 'LineWidth', 1.5);
+        plot(t, inst_freq/1e6, 'w', 'LineWidth', 1.5);
         ylabel('f_{inst} [MHz]');
         title([name, '  -  Instantaneous frequency']);
     else
@@ -158,7 +158,7 @@ for k = 1:3
         inst_phase = unwrap(angle(s));
         active = false(cfg.N,1); active(p.start_idx:p.stop_idx) = true;
         inst_phase(~active) = NaN;
-        plot(t, inst_phase, 'k', 'LineWidth', 1.5);
+        plot(t, inst_phase, 'w', 'LineWidth', 1.5);
         ylabel('phase [rad]');
         title([name, '  -  Unwrapped phase  (note kinks at chip boundaries)']);
     end
