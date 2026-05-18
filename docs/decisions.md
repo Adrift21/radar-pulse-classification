@@ -327,6 +327,43 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 
 ---
 
+## 2026-05-17 — AWGN Runtime Fonksiyonu: Python NumPy, Active-Region Power, Explicit RNG
+
+- **Karar:** `preprocessing/noise/awgn.py` yazıldı. Tek public fonksiyon `add_awgn(signal, snr_db, active_idx, rng)` — MATLAB tarafındaki `data_generation/matlab/utils/add_awgn.m`'in Python muadili. Sinyal gücü active region (non-zero pulse) üzerinden hesaplanır, AWGN complex (real + 1j*imag, her biri `N(0, noise_power/2)`), reproducibility için `rng` parametresi (numpy.random.Generator) zorunlu.
+- **Gerekçe:** decisions.md 2026-05-05 "AWGN on-the-fly" kararı gereği gürültü pre-compute edilmiyor; her DataLoader call'da runtime'da ekleniyor. Active-region power kullanımı kritik: padding sıfırları sinyal gücünü düşürür, SNR target sapar (test 5 sayısal olarak gösterdi: `active_idx=None` ile 0 dB hedefte empirik +3 dB sapma). Explicit `rng`: DataLoader worker'larında her worker kendi seed'iyle çalışmak zorunda (decisions.md 2026-05-04 "Random Seed: Global 42, Katmanlı" gereği), `worker_init_fn` her worker'a kendi Generator'unu pass edecek. MATLAB ile birebir convention: `add_awgn.m`'in `randn(N,1) + 1j*randn(N,1)` davranışıyla uyumlu (total complex variance = `noise_power`, per-component variance = `noise_power/2`).
+- **Alternatifler:** **(a)** Global `np.random` state — DataLoader worker'larında state paylaşılmadığı için reproducibility kırılır, akademik makale için kabul edilemez; **(b)** Active-region tespit otomatik (sıfır-eşik ile) — fonksiyon içinde değil caller'da, çünkü dataset zaten `start_idx`/`stop_idx`'i biliyor (HDF5'te yoksa, Modül A `params.start_idx` üretiyor); **(c)** Per-component variance = `noise_power` (her ikisi de tam variance) — MATLAB convention'undan sapar, reviewer kafa karışıklığı yaratır.
+- **Sonuç/Etki:** ~120 satır impl + docstring. Birim testleri (50 deneme × 6 SNR seviyesi) target vs empirical SNR sapması ≤ 0.13 dB std. Reproducibility test: aynı seed → max abs diff = 0.00. Görsel test (`test_awgn_snr_sweep.py`): LFM idx=4314'te 6 SNR seviyesinde STFT magnitude figure üretildi, -10 dB'de diagonal zar zor seçiliyor (gürültü baskın), +20 dB'de temiz baseline — Modül D'nin "SNR robustness" hikâye anlatımının görsel temeli.
+---
+
+## 2026-05-17 — PyTorch RadarPulseDataset + DataLoader: On-the-Fly Pipeline, Per-Sample Seeded, Multi-Worker Safe
+
+- **Karar:** `preprocessing/datasets/radar_pulse_dataset.py` yazıldı. `RadarPulseDataset(Dataset)` class'ı + `radar_pulse_worker_init(worker_id)` worker_init_fn. Pipeline her `__getitem__`'da: HDF5 read → AWGN at intended SNR → TF representation (STFT/CWD/WVD seçimi __init__'te) → tf_to_image → PyTorch (1, 224, 224) float32 tensor + int label. Per-sample seeding: `master_seed + global_sample_idx` her sample için unique ve reproducible. HDF5 file handle lazy açılır (h5py NOT fork-safe), worker_init_fn her worker'da reset eder.
+- **Gerekçe:** Modül B Phase 1'deki "AWGN runtime, gürültü pre-compute değil" kararıyla tutarlı pipeline. Per-sample seeding: Modül D'nin SNR-stratified evaluation reproducibility için kritik — aynı (idx, master_seed) → aynı output. tf_repr `__init__`'te seçilir: 3 mimari × 3 gösterim = 9 deney matrisinde her deney kendi Dataset/Loader pair'ini kurar (memory verimli, kod temiz). Worker_init_fn'in iki rolü: (a) h5py file handle'ı her worker process'te tekrar açar (fork-safe), (b) numpy/torch RNG'lerini per-worker seed'ler (defansif).
+- **Alternatifler:** **(a)** Per-epoch seed (augmentation) — şimdilik out, ileride `epoch` parametresi eklenebilir; **(b)** Single Dataset multi-TF — `__init__`'te tf_repr seçmek yerine `__getitem__`'da, esnek ama API karmaşık; **(c)** Eager HDF5 load tüm dataset'i RAM'a — 280 MB tutar, mümkün ama Kaggle/Colab kısıtları için lazy daha güvenli.
+- **Sonuç/Etki:** ~280 satır impl. 12 birim/entegrasyon testten geçti (single-process, multi-process, reproducibility, subset, throughput). Test 10: multi-process output single-process ile **bit-for-bit aynı** (max abs diff = 0.00, labels match). Akademik açıdan: aynı (master_seed, indices) ile farklı eğitim run'ları arasında tam reproducibility garantili. Pylance 75 statik analiz uyarısı verir (h5py + Module callable yanlış-pozitif), runtime sorunsuz.
+
+---
+
+## 2026-05-17 — Modül B Phase 2b Throughput Benchmark + Modül C İçin DataLoader Config
+
+- **Karar:** Modül C için **tüm 3 TF gösterimde** optimum DataLoader config: `num_workers=4, batch_size=64`. Phase 2b realistic benchmark (200 örnek class-balanced, 12 config: 3 TF × 2 workers × 2 batch_size) sonucu.
+- **Gerekçe:** Senin RTX 3050 Laptop CPU'sunda ölçülen değerler:
+    | Rep | best config | samples/sec | 50 epoch / 28k train tahmini |
+    |---|---|---|---|
+    | STFT | workers=4, batch=64 | 147.7 | 2.6 saat |
+    | WVD | workers=4, batch=64 | 54.3 | 7.2 saat |
+    | CWD | workers=4, batch=64 | 9.2 saat |
+  
+  Üç TF için de aynı config optimum — Modül C'de **tek hyperparameter setup üç eğitime de uyar**, akademik karşılaştırma için ideal. Multi-worker speedup tutarlı **2.2×** her TF için. Batch=64 her config'te batch=32'den hızlı (CPU verimliliği). Modül C tahmini: 9 deney (3 mimari × 3 TF) toplamı ~57 saat ≈ **2.4 gün lokal**. Phase 1'deki "Kaggle/Colab zorunlu" varsayımı revize edildi — RTX 3050 hesaplanabilir aralıkta.
+- **Alternatifler:** Bigger batch (128, 256) — RTX 3050 4 GB VRAM kısıtı, GPU side test gerekir; num_workers=8 — laptop core sayısı tipik 4-8, marginal kazanç beklenir; pre-compute pipeline (Phase 1'de reddedildi) — disk 24 GB, augmentation kayıp, akademik dürüstlük azalır.
+- **Sonuç/Etki:** Modül C planı revize edildi: STFT eğitimleri lokal (gece tek seferde), WVD eğitimleri lokal (gece tek seferde), CWD eğitimleri lokal veya Kaggle T4 GPU (Kaggle 3-4× hızlı tahmini). Modül C için DataLoader configs: `num_workers=4, batch_size=64, worker_init_fn=radar_pulse_worker_init`. Benchmark scripti `preprocessing/datasets/tests/benchmark_phase2b.py` ile her makinede tekrarlanabilir (akademik reproducibility).
+
+## 2026-05-17 — TF-to-Image Transform: dB-Scale + Per-Sample Max-Normalize + 224×224 Resize, 1 Channel
+
+- **Karar:** `preprocessing/transforms/tf_to_image.py` yazıldı. Tek public fonksiyon `tf_to_image(tf_magnitude, output_size=(224, 224), db_floor=-60.0, eps=1e-12, interpolation="linear")`. Pipeline: ham magnitude → dB (peak-relative) → clip [db_floor, 0] → linearly remap [0, 1] → cv2.INTER_LINEAR resize → float32 single-channel. Modül C için **STFT, CWD, WVD üçü de aynı (1, 224, 224) tensor üretir**.
+- **Gerekçe:** **(a)** Per-sample max-normalize: AWGN gürültü patternlarına karşı dayanıklı (absolute power değil, peak'e göre rölatif), train/test tutarlılığı garantili. Global z-score alternatifi reddedildi çünkü AWGN per-sample mean/std değiştirir, dataset distribution shift'i yaratır. **(b)** Tek kanal: TF magnitude doğal olarak grayscale, 3 kanala kopyalamak gereksiz bellek. ResNet/ViT'in ilk conv layer'ı `Conv2d(1, 64, ...)` ile expand eder, pretrain için Modül C'de `mean=0.5, std=0.5` normalize eklenebilir. **(c)** 224×224: ResNet-50, ViT, Swin için standart, Modül C'de aynı mimariler 3 TF gösterimi için kullanılacak (9 deney matrisi). **(d)** db_floor=-60.0: Phase 1/2/2a görsel testlerinde kullandığımız değer, tutarlı sonuçlar. **(e)** cv2.INTER_LINEAR: time ekseninde upsample (57-64 → 224), freq ekseninde downsample (256 → 224), iki yön için de güvenli default.
+- **Alternatifler:** **(B)** Global z-score normalization — AWGN ile distribution shift, reddedildi; **(C)** 3-kanal (R=G=B=magnitude veya STFT/CWD/WVD birlikte) — multi-representation fusion ayrı bir akademik soru, şimdilik out of scope; **(D)** cv2.INTER_AREA — sadece pure downsample için, mixed resize için INTER_LINEAR daha doğal.
+- **Sonuç/Etki:** ~80 satır impl + docstring. 7 birim testten geçti (shape, range, dtype, zero input, reproducibility, dB clip, interpolation modes, custom output_size, error handling). Görsel doğrulama (`test_tf_to_image_visualization.py`) 3×8 grid figürü üretti — 8 sınıf × 3 TF gösterim. Bu figür **makale "Methods" bölümünün merkez parçası**: "model gerçekten ne görüyor" sorusuna çıplak gözle cevap. Per-representation aggregate stats (gerçek dataset): STFT (mean=0.12, std=0.20), CWD (mean=0.10, std=0.15), WVD (mean=0.24, std=0.16) — üç gösterim model'a farklı statistical structure sunuyor.
 ---
 
 ❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
@@ -351,14 +388,10 @@ Modül A için Açık Sorular (kapandı):
 
 Modül B için Açık Sorular:
 
- AWGN stratejisi (pre-compute vs on-the-fly) → On-the-fly, runtime'da DataLoader içinde (2026-05-05)
- HDF5 storage convention (MATLAB column-major) → Python tarafında transpose ile uyumla (2026-05-05)
- STFT backend (scipy vs torch) → scipy (Modül C'de torch wrapper eklenecek) (2026-05-05)
- STFT çıktı tipi (complex vs magnitude) → Complex (2026-05-05)
- STFT parametreleri (win/hop/n_fft/window) → 256/32/256/Hann (2026-05-05)
- Görsel doğrulama metodolojisi → Longest-pulse seçim + istatistik tablosu (2026-05-05)
- - [x] ~~CWD parametreleri — kütüphane (`tftb` vs custom), sigma değeri, downsampling~~ → **Custom NumPy impl, σ=1.0, (256, 64) downsampling** (2026-05-17)
- WVD parametreleri — analytic signal kullanımı (Hilbert transform), smoothing penceresi, cross-term yönetimi
- dB-scale + normalizasyon stratejisi — STFT/CWD/WVD üçü için ortak normalizasyon (per-sample max-normalize? global percentile? z-score?)
- Görüntü dönüşümü — 224×224'e resize stratejisi (bilinear/bicubic), tek kanal mı RGB mi (colormap), float32 mi uint8 mi
- PyTorch Dataset/DataLoader mimarisi — split (sklearn stratified), augmentation, seed yönetimi (worker_init_fn)
+- [x] ~~CWD parametreleri~~ → Custom NumPy impl, σ=1.0, (256, 64) downsampling (2026-05-17)
+- [x] ~~WVD parametreleri~~ → Sigma=∞ via compute_cwd wrapper (2026-05-17)
+- [x] ~~AWGN runtime fonksiyonu~~ → `preprocessing/noise/awgn.py` (2026-05-17)
+- [x] ~~dB-scale + normalizasyon stratejisi~~ → Per-sample max-normalize + db_floor=-60 + cv2.INTER_LINEAR resize (2026-05-17)
+- [x] ~~Görüntü dönüşümü 224×224, tek/üç kanal~~ → 224×224, 1 channel (2026-05-17)
+- [x] ~~PyTorch Dataset/DataLoader mimarisi~~ → `RadarPulseDataset` + `radar_pulse_worker_init`, per-sample seed (2026-05-17)
+- [x] ~~Mini batch hız benchmark~~ → workers=4, batch_size=64 optimal her TF için (2026-05-17)
