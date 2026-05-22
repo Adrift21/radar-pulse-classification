@@ -87,6 +87,7 @@ experiments/results/*
 # Büyük veri formatları
 *.npy
 *.npz
+!configs/splits.npz
 *.mat
 *.tfrecord
 *.parquet

@@ -365,6 +365,58 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 - **Alternatifler:** **(B)** Global z-score normalization — AWGN ile distribution shift, reddedildi; **(C)** 3-kanal (R=G=B=magnitude veya STFT/CWD/WVD birlikte) — multi-representation fusion ayrı bir akademik soru, şimdilik out of scope; **(D)** cv2.INTER_AREA — sadece pure downsample için, mixed resize için INTER_LINEAR daha doğal.
 - **Sonuç/Etki:** ~80 satır impl + docstring. 7 birim testten geçti (shape, range, dtype, zero input, reproducibility, dB clip, interpolation modes, custom output_size, error handling). Görsel doğrulama (`test_tf_to_image_visualization.py`) 3×8 grid figürü üretti — 8 sınıf × 3 TF gösterim. Bu figür **makale "Methods" bölümünün merkez parçası**: "model gerçekten ne görüyor" sorusuna çıplak gözle cevap. Per-representation aggregate stats (gerçek dataset): STFT (mean=0.12, std=0.20), CWD (mean=0.10, std=0.15), WVD (mean=0.24, std=0.16) — üç gösterim model'a farklı statistical structure sunuyor.
 ---
+---
+
+## 2026-05-18 — Train/Val/Test Split: Joint (class, snr) Stratification, %70/15/15, SHA256 Hash Guardrail
+
+- **Karar:** `preprocessing/splits/` modülü oluşturuldu. `make_splits.py` (üretim) + `load_splits.py` (Modül C runtime) + `tests/test_splits.py` (28 pytest). Üç tasarım kararı:
+  1. **Joint stratification**: Class-stratified VE SNR-stratified ayrı ayrı değil, **birleşik** olarak yapılır. 8 sınıf × 16 SNR bin = 128 (class, snr_bin) grubu bağımsız olarak %70/15/15'e bölünür (sklearn `train_test_split` iki adımda). Garanti: her split'te her (class, snr) hücresinde en az 1 sample, train'de min 188, val'de min 40, test'te min 41 sample/hücre. Modül D'nin SNR-stratified evaluation'ı için confidence interval anlamlı kalır.
+  2. **SHA256 dataset hash guardrail**: `(labels, snr_db)` üzerinden hesaplanan SHA256, `split_metadata.json`'a yazılır. `load_splits(verify_hash=True)` çağrısı dataset.h5'in hash'ini yeniden hesaplar, mismatch durumunda RuntimeError. Bu, "dataset.h5 yeniden üretildi ama splits dosyaları eski kaldı" failure mode'unu erken yakalar. Akademik reproducibility için kritik.
+  3. **Çıktı formatı**: 3 × `.npy` (uint32 index'ler, sıralı ascending) + 1 × JSON metadata. Toplam ~960 KB. `.npy` seçimi: PyTorch DataLoader `Subset(dataset, indices)` ile doğrudan uyumlu, h5py chunked read'le sorted index'ler daha hızlı.
+
+- **Gerekçe:** decisions.md 2026-05-04 "Train/Val/Test Bölünmesi: 70/15/15" girdisinde "class-stratified ve SNR-stratified" hedefi vardı; joint stratification bu hedefin en güçlü implementasyonu. Modül C'de 9 deney (3 mimari × 3 TF) **aynı** train/val/test üzerinde çalışacak → apples-to-apples karşılaştırma. SHA256 hash: 6 ay sonra başka makinede klonlanan kişi `make_splits` çalıştırırken dataset hash'i eşleşmezse bilir. Reviewer "kodunuzu çalıştırdım, sayılar tutmadı" demesin.
+
+- **Alternatifler:** **(a)** Class-stratified + sample SNR distribution post-hoc check — daha basit ama her hücre kapsamı garantili değil; **(b)** Train script içinde inline split — 9 deney bağımsız çalışırken seed yönetimi karmaşık, side-effect olarak aynı split garantisi yok; **(c)** Hash guardrail yok — projeyi 6 ay sonra başkası klonladığında splits stale ise sessizce yanlış sonuç verir (kabul edilemez); **(d)** k-fold CV — 9 × k-fold pratik değil, akademik makalede tek-fold deneyleri yeterli.
+
+- **Sonuç/Etki:** Modül C training scriptleri `load_splits(verify_hash=True)` ile başlar, `Subset(RadarPulseDataset, idx)` kurar. Gerçek dataset üzerinde çalıştırılan üretim sonuçları:
+  - Total: 40.000 sample, split sizes: train=27.941, val=6.003, test=6.056 (%69.85 / %15.01 / %15.14)
+  - Class balance: train spread=2, val spread=3, test spread=3 sample (perfect balance korundu)
+  - Per-cell minimum: train=188, val=40, test=41
+  - Dataset hash: `5b4d243eeac5cc49...`
+  - Test suite: 28/28 passed
+- Splits dosyaları **git'e dahil edilecek** (~960 KB, küçük) — yeni klonlayanların `make_splits` çalıştırmadan eğitime başlayabilmesi için. `.gitignore`'a istisna eklenir: `!data_generation/synthetic_samples/splits/`.
+---
+
+## 2026-05-22 — Custom CNN Mimarisi: VGG-Benzeri 5 Blok, ~1.77M Parametre (Baseline)
+
+- **Karar:** Modül C'nin baseline mimarisi olarak kompakt VGG-benzeri bir CNN seçildi (`models/custom_cnn.py`):
+  - **Input:** (B, 1, 224, 224) — `tf_to_image` çıktısı (STFT/CWD/WVD üçü için aynı)
+  - **5 conv blok:** Blok 1-4 çift conv (Conv-BN-ReLU ×2), Blok 5 tek conv. Kanal ilerlemesi 1→32→64→128→256→256.
+  - **Her blok sonrası MaxPool(2×2):** spatial akış 224→112→56→28→14→7
+  - **Head:** Global Average Pooling → Dropout(0.5) → Linear(256, 8)
+  - **Normalization:** BatchNorm (her conv sonrası), aktivasyon ReLU
+  - **Weight init:** Kaiming-normal (conv), BN weight=1/bias=0, Linear N(0, 0.01)
+  - **Çıktı:** 8 logit (softmax yok; eğitimde nn.CrossEntropyLoss log-softmax'ı içeride uygular)
+  - **Parametre:** 1,765,032 (~1.77M), fp32 ağırlık 6.73 MB. Parametrelerin neredeyse tamamı feature extractor'da (1.76M); classifier head sadece 2056.
+- **Gerekçe:** Custom CNN'in akademik rolü "fair baseline" — ResNet-50 ve ViT/Swin'in düşük SNR'da ne kadar fazladan kazandığını göstermek için yeterince kompakt ama makul accuracy verebilecek bir ağ. ~1.8M parametre literatürdeki radar TF baseline ağlarıyla uyumlu (Wei et al. 2019, Liu & Zhang 2020 tarzı 4-6 bloklu CNN'ler). **BatchNorm** ResNet ile tutarlılık (fair karşılaştırma); batch=64'te küçük-batch BN sorunlarına girmez. **GAP + FC** (Flatten + büyük FC yerine) overfitting riskini ciddi azaltır — head'de sadece 2056 parametre kalır, BN ile uyumlu, ResNet tarzıyla tutarlı. **ReLU** baseline için doğal CNN tercihi (GELU kullanmak ViT'i taklit edip baseline'ı bozardı). MaxPool klasik VGG yaklaşımı, akademik anlamı net.
+- **Alternatifler:** **(A)** Minimal 4-blok ~0.5M — "trivial vs strong" hikâyesi yaratır, çok zayıf kalır; **(C)** 6-blok + bottleneck ~5-8M — ResNet'e yaklaşır, baseline rolü zayıflar; **GroupNorm/LayerNorm** — ViT'i taklit, baseline için overkill; **Flatten + FC** (VGG klasik head) — 256×7×7=12544 girişli FC çok parametre + overfitting; **strided conv** (MaxPool yerine) — modern ama baseline'ın klasik anlamını zayıflatır; **GELU** — ViT'i taklit, fair baseline değil.
+- **Sonuç/Etki:** İki yeni dosya: `models/custom_cnn.py` (~190 satır, `CustomCNN` + `count_parameters`) + `models/tests/test_custom_cnn.py` (12 birim test). Testler: forward shape, parametre aralığı, single/multi-channel, gradient flow (her trainable param gradient alıyor), num_classes konfigürasyonu, train/eval determinizmi, logit kontrolü (softmax uygulanmadığı doğrulandı), seed reproducibility — **12/12 geçti**. Spatial akış katman-katman doğrulandı. Mimari 3 TF gösterimi için aynı (1, 224, 224) input shape ile çalışır → 9 deney matrisinde aynı model tanımı her gösterime uygulanır (apples-to-apples). Sonraki adım: training script (`experiments/`), ilk STFT eğitimi, loss/accuracy eğrileri.
+
+
+## 2026-05-22 — Modül C Training Altyapısı: Config-Driven Trainer, Donmuş Split, Per-Epoch Reseeding
+
+- **Karar:** Modül C eğitimleri tek bir mimari-agnostik trainer ile yürütülecek:
+  - **Donmuş split:** `scripts/make_splits.py` → `configs/splits.npz` (28000/6000/6000, (label,snr) joint-stratified, seed=42). 9 deney + Modül D aynı split'i okur.
+  - **Config sistemi:** `experiments/config.py` (dataclass + YAML), her deney bir YAML (`configs/<tf>_<arch>.yaml`). İlk: `stft_custom_cnn.yaml`.
+  - **Model registry:** `models/registry.py`, `cfg.model.name` → sınıf. ResNet/ViT eklemek tek satır.
+  - **Trainer:** `experiments/train.py`. AdamW (lr=3e-4, wd=1e-4) + linear warmup (3 ep) + cosine (→min_lr=1e-6), CE (label_smoothing=0), 50 epoch + early stopping (val loss, patience=10), AMP (cuda).
+  - **Per-epoch reseeding (train):** train Dataset `master_seed = base + (epoch+1)*1_000_003` ile her epoch yeniden kurulur → epoch başına farklı AWGN (gerçek on-the-fly augmentation). VAL/TEST sabit seed → deterministik, Modül D reproducible.
+  - **Çıktılar:** `experiments/checkpoints/<name>/{best,last}.pth`, `experiments/results/<name>/{config.yaml,history.json,tb/}`.
+  - **DataLoader:** `num_workers=4, batch_size=64` (Phase 2b benchmark). Reseeding nedeniyle train loader her epoch rebuild edilir.
+- **Gerekçe:** Tek config-driven trainer → 9 deney aynı kodu paylaşır, apples-to-apples akademik karşılaştırma. Donmuş split tüm deneylerin aynı test setini görmesini garanti eder (reviewer reproducibility). Per-epoch reseeding decisions.md 2026-05-05 "AWGN on-the-fly, gürültü pattern overfitting önle" niyetini gerçekten uygular — Dataset tek başına train'de gürültüyü sabitliyordu; trainer epoch başına seed bump ile gerçek augmentation sağlar. Val/test sabit seed Modül D'nin SNR-stratified bit-for-bit reproducibility'si için zorunlu.
+- **Alternatifler:** Her deneye ayrı script (kod tekrarı); runtime split (her script split mantığı taşır, drift riski); train'de sabit gürültü (augmentation faydası yok, hafif overfit); epoch_seed'i Dataset'e gömmek (lokal dosya değişikliği gerekir, trainer'da çözmek daha temiz).
+- **Sonuç/Etki:** Dört yeni dosya + `configs/splits.npz` (versiyonlanmalı). Mock dataset ile uçtan uca doğrulandı: train loop, LR schedule (warmup+cosine), per-epoch reseed (train farklı/val deterministik), checkpoint, early stopping, TB logging. Sonraki adım: gerçek dataset'te STFT×CustomCNN tam eğitim → ResNet/ViT registry'ye ekle → 9 deneye genelle.
+
 
 ❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
 

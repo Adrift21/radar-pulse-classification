@@ -1,0 +1,44 @@
+# Experiment: STFT representation x Custom CNN baseline
+# First end-to-end run of the 3-architecture x 3-representation matrix.
+# Only values that matter for this experiment are listed; everything else
+# falls back to the dataclass defaults in experiments/config.py.
+
+experiment:
+  name: stft_custom_cnn
+  seed: 42
+
+data:
+  dataset_path: data_generation/synthetic_samples/dataset.h5
+  splits_path: configs/splits.npz
+  tf_repr: stft
+  add_noise: true            # noisy training & evaluation
+  master_seed: 42
+  output_size: [224, 224]
+  db_floor: -60.0
+  num_classes: 8
+
+model:
+  name: custom_cnn
+  kwargs:
+    dropout: 0.5
+
+optim:
+  optimizer: adamw
+  lr: 0.0003
+  weight_decay: 0.0001
+  epochs: 50
+  warmup_epochs: 3
+  scheduler: cosine
+  min_lr: 0.000001
+  early_stopping: true
+  patience: 10
+  amp: true
+  grad_clip_norm: 0.0
+  label_smoothing: 0.0
+
+loader:
+  batch_size: 64             # Phase 2b benchmark optimum
+  num_workers: 4             # Phase 2b benchmark optimum
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
