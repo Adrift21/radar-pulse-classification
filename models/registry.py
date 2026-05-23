@@ -17,12 +17,13 @@ from typing import Callable, Dict
 import torch.nn as nn
 
 from models.custom_cnn import CustomCNN
+from models.resnet50 import ResNet50
 
 # name -> factory(num_classes, in_channels, **kwargs) -> nn.Module
 _REGISTRY: Dict[str, Callable[..., nn.Module]] = {
     "custom_cnn": CustomCNN,
+    "resnet50": ResNet50,
     # Module C, later:
-    # "resnet50": ResNet50Wrapper,
     # "vit_small": ViTSmallWrapper,
 }
 

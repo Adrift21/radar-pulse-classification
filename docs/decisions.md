@@ -417,6 +417,12 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 - **Alternatifler:** Her deneye ayrı script (kod tekrarı); runtime split (her script split mantığı taşır, drift riski); train'de sabit gürültü (augmentation faydası yok, hafif overfit); epoch_seed'i Dataset'e gömmek (lokal dosya değişikliği gerekir, trainer'da çözmek daha temiz).
 - **Sonuç/Etki:** Dört yeni dosya + `configs/splits.npz` (versiyonlanmalı). Mock dataset ile uçtan uca doğrulandı: train loop, LR schedule (warmup+cosine), per-epoch reseed (train farklı/val deterministik), checkpoint, early stopping, TB logging. Sonraki adım: gerçek dataset'te STFT×CustomCNN tam eğitim → ResNet/ViT registry'ye ekle → 9 deneye genelle.
 
+## 2026-05-23 — ResNet-50: ImageNet-Pretrained, 1-Kanal Adaptasyon, lr=1e-4
+
+- **Karar:** İkinci mimari ResNet-50 (timm), ImageNet-1k pretrained. 1-kanal TF görüntüsü için `in_chans=1` (timm 3-kanal stem ağırlığını toplayarak 1-kanala indirir, bilgi-koruyan standart yöntem), `num_classes=8`. Pretrained fine-tuning için lr=3e-4 yerine **lr=1e-4** (diğer her şey CustomCNN ile aynı: AdamW, cosine+warmup, 50 epoch, AMP, aynı donmuş split). ~23.5M param.
+- **Gerekçe:** Transfer learning radar TF-sınıflandırma literatüründe standart; "küçük custom ağ scratch vs güçlü backbone fine-tune" gerçekçi pratisyen sorusunu yansıtır. lr=1e-4 pretrained ağırlığı bozmadan adapte eder. timm'in in_chans adaptasyonu elle kanal-kopyalama/ortalama gerektirmez, Dataset 1-kanal döndürmeye devam eder.
+- **Alternatifler:** Scratch ResNet (CustomCNN ile tam-fair ama 28k örnekle overfit/düşük SNR riski); 1-kanalı 3'e kopyalama (3× bellek, pretrained bozulmaz ama gereksiz); lr=3e-4 (pretrained için agresif).
+- **Sonuç/Etki:** `models/resnet50.py` + registry'ye 1 satır + `configs/stft_resnet50.yaml`. Mock ile train/eval uçtan uca doğrulandı (pretrained=False, sandbox network kısıtı). Beklenti: pretrained sayesinde CustomCNN'den hızlı convergence, düşük SNR'da (−10..−4 dB) baseline'ı geçmesi.
 
 ❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
 
