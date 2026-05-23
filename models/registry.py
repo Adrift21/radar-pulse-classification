@@ -18,13 +18,13 @@ import torch.nn as nn
 
 from models.custom_cnn import CustomCNN
 from models.resnet50 import ResNet50
+from models.vit import ViTSmall
 
 # name -> factory(num_classes, in_channels, **kwargs) -> nn.Module
 _REGISTRY: Dict[str, Callable[..., nn.Module]] = {
     "custom_cnn": CustomCNN,
     "resnet50": ResNet50,
-    # Module C, later:
-    # "vit_small": ViTSmallWrapper,
+    "vit_small": ViTSmall,
 }
 
 
