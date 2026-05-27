@@ -1,0 +1,47 @@
+# Experiment: STFT representation x ViT-Small (ImageNet-pretrained)
+# Third architecture in the 3-architecture x 3-representation matrix; the
+# Transformer counterpart to the CNN models. Capacity (~21.5M) matched to
+# ResNet-50 (~23.5M) so the comparison isolates paradigm, not model size.
+# Differs from cwd_resnet50.yaml only in: model, lr (lower for ViT).
+# Data / split / loader identical -> fair comparison on the same split.
+
+experiment:
+  name: cwd_vit
+  seed: 42
+
+data:
+  dataset_path: data_generation/synthetic_samples/dataset.h5
+  splits_path: configs/splits.npz
+  tf_repr: cwd
+  add_noise: true
+  master_seed: 42
+  output_size: [224, 224]
+  db_floor: -60.0
+  num_classes: 8
+
+model:
+  name: vit_small
+  kwargs:
+    pretrained: true        # ImageNet-1k; timm adapts 3->1 patch embed
+    drop_rate: 0.0
+
+optim:
+  optimizer: adamw
+  lr: 0.00005               # 5e-5: lower for ViT (no conv inductive bias)
+  weight_decay: 0.0001
+  epochs: 50
+  warmup_epochs: 3
+  scheduler: cosine
+  min_lr: 0.000001
+  early_stopping: true
+  patience: 10
+  amp: true
+  grad_clip_norm: 1.0       # ViTs benefit from gradient clipping
+  label_smoothing: 0.0
+
+loader:
+  batch_size: 64            # if OOM on 4 GB VRAM, drop to 32
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2

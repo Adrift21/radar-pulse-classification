@@ -1,0 +1,46 @@
+# Experiment: STFT representation x ResNet-50 (ImageNet-pretrained)
+# Second architecture in the 3-architecture x 3-representation matrix.
+# Differs from cwd_custom_cnn.yaml only in: model, lr (lower for
+# pretrained fine-tuning). Data / split / loader identical -> fair
+# apples-to-apples comparison on the same frozen split.
+
+experiment:
+  name: cwd_resnet50
+  seed: 42
+
+data:
+  dataset_path: data_generation/synthetic_samples/dataset.h5
+  splits_path: configs/splits.npz
+  tf_repr: cwd
+  add_noise: true
+  master_seed: 42
+  output_size: [224, 224]
+  db_floor: -60.0
+  num_classes: 8
+
+model:
+  name: resnet50
+  kwargs:
+    pretrained: true        # ImageNet-1k; timm adapts 3->1 channel stem
+    drop_rate: 0.0
+
+optim:
+  optimizer: adamw
+  lr: 0.0001                # lower LR for pretrained fine-tuning
+  weight_decay: 0.0001
+  epochs: 50
+  warmup_epochs: 3
+  scheduler: cosine
+  min_lr: 0.000001
+  early_stopping: true
+  patience: 10
+  amp: true
+  grad_clip_norm: 0.0
+  label_smoothing: 0.0
+
+loader:
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2

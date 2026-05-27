@@ -424,6 +424,19 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 - **Alternatifler:** Scratch ResNet (CustomCNN ile tam-fair ama 28k örnekle overfit/düşük SNR riski); 1-kanalı 3'e kopyalama (3× bellek, pretrained bozulmaz ama gereksiz); lr=3e-4 (pretrained için agresif).
 - **Sonuç/Etki:** `models/resnet50.py` + registry'ye 1 satır + `configs/stft_resnet50.yaml`. Mock ile train/eval uçtan uca doğrulandı (pretrained=False, sandbox network kısıtı). Beklenti: pretrained sayesinde CustomCNN'den hızlı convergence, düşük SNR'da (−10..−4 dB) baseline'ı geçmesi.
 
+## 2026-05-23 — ViT-Small: ImageNet-Pretrained, Kapasite-Eşitlenmiş, lr=5e-5
+
+- **Karar:** Üçüncü mimari ViT-Small (timm `vit_small_patch16_224`), ImageNet-1k pretrained. ~21.5M param — bilinçli olarak ResNet-50'ye (~23.5M) yakın seçildi. 1-kanal için `in_chans=1` (timm patch embed ağırlığını adapte eder), `num_classes=8`. ViT için lr=5e-5 (CNN'lerden düşük: ResNet 1e-4, CustomCNN 3e-4), grad_clip_norm=1.0. Diğer her şey aynı (AdamW, cosine+warmup, 50 epoch, AMP, aynı donmuş split). batch=64 hedef; OOM olursa 32.
+- **Gerekçe:** ViT-Small'ı ResNet-50 kapasitesine eşitlemek, karşılaştırmayı **paradigma** (self-attention vs convolution) ekseninde izole eder, ham model boyutundan ayırır — vit_base (86M) kullanmak kapasiteyi paradigmayla karıştırırdı ve 28k örnekle güvenilir fine-tune zor olurdu. ViT'ler convolutional inductive bias'tan yoksun, küçük/orta veride optimizasyona daha hassas → düşük lr + gradient clipping. Pretrained: transfer learning standart pratik.
+- **Alternatifler:** vit_base (kapasite-paradigma karışımı, VRAM/veri sorunu); swin_tiny (hiyerarşik, "saf ViT" hikâyesini bulanıklaştırır); scratch ViT (28k örnekle çok zor); lr=1e-4 (ViT için agresif).
+- **Sonuç/Etki:** `models/vit.py` + registry'ye 1 satır + `configs/stft_vit.yaml`. Mock ile train (grad clip dahil) + eval uçtan uca doğrulandı. Beklenti açık: ViT inductive bias eksikliği nedeniyle CNN'leri geçmeyebilir → geçemezse "bu görevde kompakt CNN optimal, mimari karmaşıklığı gereksiz" mesajı güçlenir; geçerse "transformer'lar radar TF'de üstün" bulgusu.
+
+## 2026-05-25 — CWD Eğitim Süresi Ölçümü: ~740s/epoch (Lokal RTX 3050)
+
+- **Karar:** CWD eğitimleri lokal RTX 3050'de yapılacak. 2-epoch ölçüm: ~740s/epoch (CustomCNN). Tam 50 epoch ≈ ~10 saat, 3 CWD eğitimi ≈ ~30 saat.
+- **Gerekçe:** Custom decimated CWD impl'in 14× hız avantajı (decisions.md 2026-05-17) sayesinde CWD STFT'den sadece ~2.7× yavaş (740s vs 270s), benchmark'ın ham-çözünürlük 16× tahmininden çok daha iyi. Kaggle'a taşıma zahmeti (dataset yükleme, reproducibility garantisi) bu süre için gereksiz; lokal gece çalıştırma yeterli.
+- **Sonuç/Etki:** 3 CWD config'i (`configs/cwd_*.yaml`) hazır, sadece tf_repr farklı. Zincirleme çalıştırma ile 3 eğitim tek blokta yapılabilir.
+- 
 ❓ Açık Sorular (Modül A İlerlerken Karar Verilecek)
 
  Sample rate: 100 MHz mi 200 MHz mi? → 100 MHz (2026-05-04)
