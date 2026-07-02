@@ -13,7 +13,7 @@ Design (decisions.md, 2026-05-18 entry):
     - BatchNorm after every conv, ReLU activation
     - MaxPool(2x2) after each block: 224 -> 112 -> 56 -> 28 -> 14 -> 7
     - Global Average Pooling -> Dropout(0.5) -> Linear(256, 8)
-    - ~1.8M parameters; fits comfortably on RTX 3050 (4 GB) at batch=64
+    - ~1.8M parameters; fits comfortably on RTX 5050 (4 GB) at batch=64
 
 Notes
 -----

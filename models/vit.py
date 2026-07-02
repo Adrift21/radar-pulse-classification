@@ -25,7 +25,7 @@ set in configs/stft_vit.yaml.
 Notes
 -----
 - Pretrained weights are fetched by timm on first use (network / HF cache).
-- 4 GB VRAM (RTX 3050): batch=64 is the target; if OOM, drop to 32 via
+- 4 GB VRAM (RTX 5050): batch=64 is the target; if OOM, drop to 32 via
   the config loader knob. This changes only the training batch, not the
   frozen test split, so the comparison stays fair.
 """

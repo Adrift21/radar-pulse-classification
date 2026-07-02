@@ -1,4 +1,4 @@
-# Experiment: STFT representation x ResNet-50 (ImageNet-pretrained)
+# Experiment: CWD representation x ResNet-50 (ImageNet-pretrained)
 # Second architecture in the 3-architecture x 3-representation matrix.
 # Differs from cwd_custom_cnn.yaml only in: model, lr (lower for
 # pretrained fine-tuning). Data / split / loader identical -> fair

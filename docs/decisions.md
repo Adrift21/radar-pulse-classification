@@ -26,7 +26,7 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 ## 2026-05-03 — Hedef Sınıf Sayısı: 8
 
 - **Karar:** 8 farklı radar sinyal sınıfı kullanılacak (LFM, NLFM, Barker, Frank, polifaz P1-P4, Costas, CW, FH/Stepped).
-- **Gerekçe:** Akademik literatürdeki standart aralık 6-12 sınıf. 8 sınıf hem yeterli çeşitlilik sağlar hem de RTX 3050 + 4 GB VRAM ile makul sürede eğitilebilir.
+- **Gerekçe:** Akademik literatürdeki standart aralık 6-12 sınıf. 8 sınıf hem yeterli çeşitlilik sağlar hem de RTX 5050 + 4 GB VRAM ile makul sürede eğitilebilir.
 - **Alternatifler:** 4-5 sınıf (yetersiz), 12+ sınıf (eğitim süresi ve VRAM zorlu).
 - **Sonuç/Etki:** Veri üretim modülünün kapsamı, model output dimension'ları, confusion matrix boyutu.
 
@@ -44,7 +44,7 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 ## 2026-05-03 — Geliştirme Ortamı: Hibrit (Lokal + Cloud)
 
 - **Karar:** Lokal makinede kod geliştirme + MATLAB veri üretimi; Kaggle'da ResNet eğitimi; Colab Pro'da ViT/Swin eğitimi.
-- **Gerekçe:** RTX 3050 Laptop GPU (4 GB VRAM) prototipleme için yeterli ama büyük modeller için kısıtlı. Kaggle bedava T4 sunuyor, Colab Pro ucuz A100 erişimi sağlıyor. AWS bilinçli olarak dışlandı (saatlik maliyet, akademik bütçe).
+- **Gerekçe:** RTX 5050 Laptop GPU (4 GB VRAM) prototipleme için yeterli ama büyük modeller için kısıtlı. Kaggle bedava T4 sunuyor, Colab Pro ucuz A100 erişimi sağlıyor. AWS bilinçli olarak dışlandı (saatlik maliyet, akademik bütçe).
 - **Alternatifler:** Tamamen lokal (yavaş, ViT eğitilemez), tamamen AWS (pahalı), tek bulut sağlayıcı (esnek değil).
 - **Sonuç/Etki:** Veri formatı (Kaggle/Colab'a yüklenebilir boyutta tutulmalı), config yönetimi (bulut/lokal ayrımı).
 
@@ -62,7 +62,7 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 ## 2026-05-03 — Deep Learning Framework: PyTorch (TensorFlow yerine)
 
 - **Karar:** PyTorch 2.6.0 + CUDA 12.4 (cu124 wheel).
-- **Gerekçe:** Akademik araştırmada PyTorch hakim, `timm` kütüphanesi ile ViT/Swin gibi modern mimarilere kolay erişim, `grad-cam` paketi PyTorch için olgun. RTX 3050 driver'ı CUDA 12.5 destekliyor → cu124 ileri uyumlu.
+- **Gerekçe:** Akademik araştırmada PyTorch hakim, `timm` kütüphanesi ile ViT/Swin gibi modern mimarilere kolay erişim, `grad-cam` paketi PyTorch için olgun. RTX 5050 driver'ı CUDA 12.5 destekliyor → cu124 ileri uyumlu.
 - **Alternatifler:** TensorFlow/Keras (deployment için iyi ama araştırma topluluğu PyTorch'a kaydı), JAX (henüz olgun değil).
 - **Sonuç/Etki:** Tüm model implementasyonları PyTorch syntax'ı kullanacak; ONNX export ile gerekirse deployment yapılabilir.
 
@@ -107,7 +107,7 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 ## 2026-05-04 — Sınıf Başına 5000 Örnek, SNR Rastgele Atanacak
 
 - **Karar:** Her sınıftan 5000 örnek üretilecek (toplam 40.000). Her örneğe SNR değeri `[-10, -8, ..., +20] dB` setinden rastgele atanacak (her örnek tek bir SNR'de).
-- **Gerekçe:** 5000 örnek RTX 3050'de eğitilebilir, Kaggle dataset limitine (20 GB free) sığar. SNR'i örnek başına rastgele atamak, "her örneği her SNR'de üret" yaklaşımına göre çok daha az veri ile eşdeğer genelleme verir (continuous augmentation mantığı). Test/eval'de SNR-stratified analiz için her SNR seviyesinde yeterli (≈ 5000/16 ≈ 312 örnek/sınıf/SNR) örnek garantilenir.
+- **Gerekçe:** 5000 örnek RTX 5050'de eğitilebilir, Kaggle dataset limitine (20 GB free) sığar. SNR'i örnek başına rastgele atamak, "her örneği her SNR'de üret" yaklaşımına göre çok daha az veri ile eşdeğer genelleme verir (continuous augmentation mantığı). Test/eval'de SNR-stratified analiz için her SNR seviyesinde yeterli (≈ 5000/16 ≈ 312 örnek/sınıf/SNR) örnek garantilenir.
 - **Alternatifler:** 10000/sınıf (80.000 toplam → ~24 GB ham TF görüntü, Kaggle limiti zorlanır), her örneği her SNR'de üret (16× veri patlaması).
 - **Sonuç/Etki:** Veri üretim döngüsü iki katmanlı: (1) sınıf başına 5000 temiz sinyal üret, (2) her birine `randi([1,16])` ile SNR seçilip AWGN eklenir.
 
@@ -347,15 +347,15 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 ## 2026-05-17 — Modül B Phase 2b Throughput Benchmark + Modül C İçin DataLoader Config
 
 - **Karar:** Modül C için **tüm 3 TF gösterimde** optimum DataLoader config: `num_workers=4, batch_size=64`. Phase 2b realistic benchmark (200 örnek class-balanced, 12 config: 3 TF × 2 workers × 2 batch_size) sonucu.
-- **Gerekçe:** Senin RTX 3050 Laptop CPU'sunda ölçülen değerler:
+- **Gerekçe:** Senin RTX 5050 Laptop CPU'sunda ölçülen değerler:
     | Rep | best config | samples/sec | 50 epoch / 28k train tahmini |
     |---|---|---|---|
     | STFT | workers=4, batch=64 | 147.7 | 2.6 saat |
     | WVD | workers=4, batch=64 | 54.3 | 7.2 saat |
     | CWD | workers=4, batch=64 | 9.2 saat |
   
-  Üç TF için de aynı config optimum — Modül C'de **tek hyperparameter setup üç eğitime de uyar**, akademik karşılaştırma için ideal. Multi-worker speedup tutarlı **2.2×** her TF için. Batch=64 her config'te batch=32'den hızlı (CPU verimliliği). Modül C tahmini: 9 deney (3 mimari × 3 TF) toplamı ~57 saat ≈ **2.4 gün lokal**. Phase 1'deki "Kaggle/Colab zorunlu" varsayımı revize edildi — RTX 3050 hesaplanabilir aralıkta.
-- **Alternatifler:** Bigger batch (128, 256) — RTX 3050 4 GB VRAM kısıtı, GPU side test gerekir; num_workers=8 — laptop core sayısı tipik 4-8, marginal kazanç beklenir; pre-compute pipeline (Phase 1'de reddedildi) — disk 24 GB, augmentation kayıp, akademik dürüstlük azalır.
+  Üç TF için de aynı config optimum — Modül C'de **tek hyperparameter setup üç eğitime de uyar**, akademik karşılaştırma için ideal. Multi-worker speedup tutarlı **2.2×** her TF için. Batch=64 her config'te batch=32'den hızlı (CPU verimliliği). Modül C tahmini: 9 deney (3 mimari × 3 TF) toplamı ~57 saat ≈ **2.4 gün lokal**. Phase 1'deki "Kaggle/Colab zorunlu" varsayımı revize edildi — RTX 5050 hesaplanabilir aralıkta.
+- **Alternatifler:** Bigger batch (128, 256) — RTX 5050 4 GB VRAM kısıtı, GPU side test gerekir; num_workers=8 — laptop core sayısı tipik 4-8, marginal kazanç beklenir; pre-compute pipeline (Phase 1'de reddedildi) — disk 24 GB, augmentation kayıp, akademik dürüstlük azalır.
 - **Sonuç/Etki:** Modül C planı revize edildi: STFT eğitimleri lokal (gece tek seferde), WVD eğitimleri lokal (gece tek seferde), CWD eğitimleri lokal veya Kaggle T4 GPU (Kaggle 3-4× hızlı tahmini). Modül C için DataLoader configs: `num_workers=4, batch_size=64, worker_init_fn=radar_pulse_worker_init`. Benchmark scripti `preprocessing/datasets/tests/benchmark_phase2b.py` ile her makinede tekrarlanabilir (akademik reproducibility).
 
 ## 2026-05-17 — TF-to-Image Transform: dB-Scale + Per-Sample Max-Normalize + 224×224 Resize, 1 Channel
@@ -431,9 +431,9 @@ Bu dosya proje boyunca alınan teknik ve stratejik kararları kayıt altına al�
 - **Alternatifler:** vit_base (kapasite-paradigma karışımı, VRAM/veri sorunu); swin_tiny (hiyerarşik, "saf ViT" hikâyesini bulanıklaştırır); scratch ViT (28k örnekle çok zor); lr=1e-4 (ViT için agresif).
 - **Sonuç/Etki:** `models/vit.py` + registry'ye 1 satır + `configs/stft_vit.yaml`. Mock ile train (grad clip dahil) + eval uçtan uca doğrulandı. Beklenti açık: ViT inductive bias eksikliği nedeniyle CNN'leri geçmeyebilir → geçemezse "bu görevde kompakt CNN optimal, mimari karmaşıklığı gereksiz" mesajı güçlenir; geçerse "transformer'lar radar TF'de üstün" bulgusu.
 
-## 2026-05-25 — CWD Eğitim Süresi Ölçümü: ~740s/epoch (Lokal RTX 3050)
+## 2026-05-25 — CWD Eğitim Süresi Ölçümü: ~740s/epoch (Lokal RTX 5050)
 
-- **Karar:** CWD eğitimleri lokal RTX 3050'de yapılacak. 2-epoch ölçüm: ~740s/epoch (CustomCNN). Tam 50 epoch ≈ ~10 saat, 3 CWD eğitimi ≈ ~30 saat.
+- **Karar:** CWD eğitimleri lokal RTX 5050'de yapılacak. 2-epoch ölçüm: ~740s/epoch (CustomCNN). Tam 50 epoch ≈ ~10 saat, 3 CWD eğitimi ≈ ~30 saat.
 - **Gerekçe:** Custom decimated CWD impl'in 14× hız avantajı (decisions.md 2026-05-17) sayesinde CWD STFT'den sadece ~2.7× yavaş (740s vs 270s), benchmark'ın ham-çözünürlük 16× tahmininden çok daha iyi. Kaggle'a taşıma zahmeti (dataset yükleme, reproducibility garantisi) bu süre için gereksiz; lokal gece çalıştırma yeterli.
 - **Sonuç/Etki:** 3 CWD config'i (`configs/cwd_*.yaml`) hazır, sadece tf_repr farklı. Zincirleme çalıştırma ile 3 eğitim tek blokta yapılabilir.
 - 

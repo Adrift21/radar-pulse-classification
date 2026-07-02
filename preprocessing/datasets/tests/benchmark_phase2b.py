@@ -14,7 +14,7 @@ subset (25 per class x 8 classes).
 The results inform Module C's DataLoader configuration choice. Output is
 a printed table sortable by samples/sec, plus an inline recommendation.
 
-Outputs only to stdout. Total wall time ~5-8 min on a RTX 3050 laptop.
+Outputs only to stdout. Total wall time ~5-8 min on a RTX 5050 laptop.
 
 Author: Kaan Emre Evci
 Project: Radar Pulse Classification (Module B, Phase 2b)

@@ -77,7 +77,7 @@ class OptimCfg:
     # Early stopping on validation loss.
     early_stopping: bool = True
     patience: int = 10
-    # Mixed precision (RTX 3050, 4 GB).
+    # Mixed precision (RTX 5050, 4 GB).
     amp: bool = True
     # Gradient clipping (0 disables).
     grad_clip_norm: float = 0.0

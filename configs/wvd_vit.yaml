@@ -1,4 +1,4 @@
-# Experiment: STFT representation x ViT-Small (ImageNet-pretrained)
+# Experiment: WVD representation x ViT-Small (ImageNet-pretrained)
 # Third architecture in the 3-architecture x 3-representation matrix; the
 # Transformer counterpart to the CNN models. Capacity (~21.5M) matched to
 # ResNet-50 (~23.5M) so the comparison isolates paradigm, not model size.

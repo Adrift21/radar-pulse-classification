@@ -1,5 +1,5 @@
-# Experiment: STFT representation x Custom CNN baseline
-# First end-to-end run of the 3-architecture x 3-representation matrix.
+# Experiment: WVD representation x Custom CNN baseline
+# First WVD run in the 3-architecture x 3-representation matrix (7th of 9 overall).
 # Only values that matter for this experiment are listed; everything else
 # falls back to the dataclass defaults in experiments/config.py.
 
