@@ -42,6 +42,10 @@ Değerler yüzde (%). `≥+6 dB` = +6…+20 dB arası 8 SNR seviyesinin ortalama
   ± mimariler arası min/max bandı. WVD'nin düşük SNR'daki çöküşünü tek bakışta anlatır.
 - **`analysis/all9_snr_robustness.png`** — Detay figür. 9 modelin tamamı; renk = TF gösterimi,
   çizgi stili/marker = mimari. Ek/supplementary materyal için.
+- **`analysis/qualitative_tf_{lfm,costas}.png`** — Niteliksel illüstrasyon (Methods+Discussion).
+  Aynı sinyalin STFT/CWD/WVD gösterimleri (satır) × SNR [+20, 0, -6, -10] dB (sütun). Cross-term
+  mekanizmasını **gözle** kanıtlar (§3.3). Kaynak: `analysis/qualitative_tf_illustration.py`.
+- **`analysis/overall_accuracy_ci.png`** — 9 modelin genel doğruluğu + %95 Wilson CI (§5).
 - Deney-bazlı figürler (her `results/<tf>_<arch>/` altında): `confusion_matrix.png`,
   `per_snr_accuracy.png`, `class_snr_accuracy.png`.
 
@@ -83,6 +87,14 @@ boğar. STFT (pencereleme ile lineer, cross-term üretmez) ve CWD (Choi-Williams
 çapraz terimleri σ=1.0 ile bastırır) bu bozulmaya çok daha dayanıklıdır. Yüksek SNR'da (≥+2 dB)
 gürültü kaynaklı çapraz terimler ihmal edilebilir hale gelir ve WVD'nin yüksek zaman-frekans
 çözünürlüğü avantajı geri gelir — bu yüzden üç gösterim yüksek SNR'da yakınsar.
+
+**Görsel kanıt (`qualitative_tf_{lfm,costas}.png`):** Aynı sinyalin STFT/CWD/WVD gösterimleri
+SNR düşerken karşılaştırıldığında mekanizma çıplak gözle görülüyor. +20 dB'de WVD imzası (LFM
+köşegeni / Costas frekans-atlama basamakları) en keskin olanı; ama -6 dB'de solmaya başlıyor ve
+-10 dB'de tüm zaman-frekans düzlemini dolduran parlak bir cross-term/gürültü lekesine gömülüyor.
+Buna karşın STFT'nin köşegeni/basamakları ve CWD'nin (kernel-bastırılmış) imzası -10 dB'de bile
+hâlâ okunabilir kalıyor. Bu, §3.2'deki -10 dB doğruluk uçurumunun (WVD ~%25 vs STFT/CWD ~%85)
+doğrudan görsel karşılığı.
 
 **Sonuç cümlesi:** Elektronik harp gibi düşük-SNR ortamlarında ham WVD'nin yüksek çözünürlüğü,
 gürültü kaynaklı cross-term kirlenmesi tarafından fazlasıyla dengelenmektedir; STFT ve CWD
@@ -205,6 +217,8 @@ seçiminin etkisi mimari seçiminden çok daha büyük.
 ---
 
 ## 6. Sıradaki Adımlar
+- [x] Niteliksel TF illüstrasyon figürü (STFT/CWD/WVD × SNR) — cross-term mekanizmasının görsel
+      kanıtı. → §3.3 / §2 (`qualitative_tf_{lfm,costas}.png`).
 - [ ] Ana figür ve tabloyu makale Results bölümüne yerleştir; caption'ları yaz. (Not: henüz `paper/`
       dizini yok — makale iskeleti oluşturulmalı.)
 - [x] LFM↔NLFM ve Costas↔SteppedFH karışımlarını düşük SNR confusion matrix'leri üzerinden incele.
