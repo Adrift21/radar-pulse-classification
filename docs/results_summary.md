@@ -86,11 +86,25 @@ gürültü kaynaklı çapraz terimler ihmal edilebilir hale gelir ve WVD'nin yü
 gürültü kaynaklı cross-term kirlenmesi tarafından fazlasıyla dengelenmektedir; STFT ve CWD
 operasyonel olarak anlamlı SNR aralığında belirgin şekilde daha dayanıklıdır.
 
-### 3.4 Mimari ikincil bir faktör
+### 3.4 Mimari ikincil bir faktör — kaynak verimliliği
 Her gösterim ailesi içinde mimariler arası fark ≤1 puan: Custom-CNN ≈ ResNet-50 ≳ ViT-Small.
 Hafif Custom-CNN, çok daha ağır ResNet-50/ViT-Small ile başa baş — hatta STFT'de en yüksek tek
-skor (%98.22) ona ait. Bu, bu problem için kaynak-verimli küçük bir CNN'in yeterli olduğu
-yönünde sağlam bir yan bulgu (kaynak/parametre kıyaslaması makaleye ek katkı).
+skor (%98.22) ona ait. Model karmaşıklığı bunu sayısallaştırıyor:
+
+| Model | Params (M) | Custom'a göre | GFLOPs @224² | GMACs | En iyi Test Acc (STFT) |
+|---|---|---|---|---|---|
+| **Custom-CNN** | **1.77** | **1.0×** | **5.35** | **2.67** | **98.22** |
+| ResNet-50 | 23.52 | 13.3× | 8.02 | 4.01 | 98.00 |
+| ViT-Small | 21.47 | 12.1× | 8.40 | 4.20 | 97.45 |
+
+> Kaynak: `analysis/model_complexity.py` (proje model registry'si ile, giriş 1×224×224,
+> `pretrained=False` — sayımlar ağırlıktan bağımsız). FLOPs: torch `FlopCounterMode`
+> (conv + linear + attention matmul). GMACs = GFLOPs / 2.
+
+Custom-CNN, ~13× daha az parametre ve ~1.5× daha az FLOP ile en yüksek doğruluğu veriyor. Yani bu
+8-sınıf problemi için ImageNet-ölçeğinde bir omurga (ResNet-50/ViT-Small) **gereksiz**; küçük,
+problem-özel bir CNN hem daha doğru hem çok daha ucuz. Bu, sınırlı donanımda (RTX 5050, 8 GB VRAM)
+ve olası kenar/edge dağıtımda operasyonel olarak anlamlı bir yan bulgu.
 
 ### 3.5 Sınıf-bazlı gözlemler
 Genelde en zor sınıflar LFM (en düşük precision, ~0.93–0.96; NLFM/discretized-chirp aileleriyle
@@ -142,6 +156,6 @@ neyi karıştırır" sorusunun cevabı SNR-bağımlı: önce gürültü-çekim, 
       → §4 (WVD için tamamlandı).
 - [ ] STFT/CWD için per-SNR confusion: checkpoint'ler silinmiş; ya yeniden eğit ya da
       eğitim çıktısı olarak preds'i kalıcı sakla. (§4 kısıtı.)
-- [ ] Parametre/FLOP tablosu ekle (§3.4 kaynak-verimlilik argümanını sayısallaştır).
+- [x] Parametre/FLOP tablosu ekle (§3.4 kaynak-verimlilik argümanını sayısallaştır). → §3.4.
 - [ ] (Opsiyonel) İstatistiksel anlamlılık: tekrarlı seed veya bootstrap CI ile TF farklarının
       güven aralığı.
