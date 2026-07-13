@@ -100,9 +100,48 @@ dosyaları.
 
 ---
 
-## 4. Sıradaki Adımlar
-- [ ] Ana figür ve tabloyu makale Results bölümüne yerleştir; caption'ları yaz.
-- [ ] LFM↔NLFM ve Costas↔SteppedFH karışımlarını düşük SNR confusion matrix'leri üzerinden incele.
+## 4. WVD Düşük-SNR Confusion Analizi
+
+> Kaynak: `analysis/wvd_lowsnr_confusion.py` (per-sample `labels`/`preds`/`snr`,
+> `eval_arrays.npz`). Figür: `analysis/wvd_lowsnr_confusion_custom_cnn.png`.
+> **Önemli kısıt:** Bu analiz yalnızca WVD için yapılabildi — STFT/CWD checkpoint'leri
+> (`.pth`, gitignore'lı ve büyük) diskten silinmiş; onların per-SNR confusion'ı ancak
+> yeniden eğitimle elde edilebilir (bkz. §5 TODO). WVD zaten çöken gösterim olduğu için
+> asıl ilgi çekici vaka budur.
+
+WVD'nin hataları **SNR'a göre nitelik değiştiriyor** — tek bir sabit karışım çifti yok:
+
+**(a) -10 dB — gürültü/cross-term kaynaklı dağınık karışım.** Doğruluk ~%25. Hiçbir çift
+baskın değil; en yüksek çiftler bile ~%22–34 ve tahminler **frekans-çevik "çekim" sınıflarına**
+(Costas, SteppedFH, NLFM sütunları) geniş biçimde yayılıyor. Bu, gürültü kaynaklı cross-term'lerin
+WVD düzlemini geniş-bantlı desenlerle doldurmasının doğrudan imzası — model bunu frekans-atlamalı
+sınıflara benzetiyor. Sınıf-bazlı recall (3 mimari pooled):
+
+| Sınıf | -10 dB recall | Sınıf | -10 dB recall |
+|---|---|---|---|
+| LFM | **9.6%** (en kötü) | Costas | 28.7% |
+| Barker | 19.4% | SteppedFH | 30.2% |
+| NLFM | 21.1% | Polyphase | 30.6% |
+| CW | 24.4% | Frank | **34.0%** (en iyi) |
+
+**(b) -8 → -6 dB — yapısal karışıma geçiş.** Gürültü çekildikçe hatalar **gerçekten benzer
+çiftlere** toplanıyor: LFM↔NLFM (chirp ailesi; -8 dB'de %27, -6 dB'de %15/%13) ve
+Frank↔Polyphase (matris-faz ailesi; ~%11–24). -6 dB'de matris neredeyse köşegen (acc ~%76).
+
+**Hipotez edilen çiftlerin doğrulanması:** Checklist'te öngörülen iki çift de görülüyor ama
+**farklı SNR rejimlerinde**: Costas↔SteppedFH bir **-10 dB (gürültü) olgusu** (SteppedFH→Costas
+%24, Costas→SteppedFH %23), LFM↔NLFM ise bir **yapısal (-8/-6 dB) olgu**. Yani "düşük SNR'da model
+neyi karıştırır" sorusunun cevabı SNR-bağımlı: önce gürültü-çekim, sonra aile-içi benzerlik.
+
+---
+
+## 5. Sıradaki Adımlar
+- [ ] Ana figür ve tabloyu makale Results bölümüne yerleştir; caption'ları yaz. (Not: henüz `paper/`
+      dizini yok — makale iskeleti oluşturulmalı.)
+- [x] LFM↔NLFM ve Costas↔SteppedFH karışımlarını düşük SNR confusion matrix'leri üzerinden incele.
+      → §4 (WVD için tamamlandı).
+- [ ] STFT/CWD için per-SNR confusion: checkpoint'ler silinmiş; ya yeniden eğit ya da
+      eğitim çıktısı olarak preds'i kalıcı sakla. (§4 kısıtı.)
 - [ ] Parametre/FLOP tablosu ekle (§3.4 kaynak-verimlilik argümanını sayısallaştır).
 - [ ] (Opsiyonel) İstatistiksel anlamlılık: tekrarlı seed veya bootstrap CI ile TF farklarının
       güven aralığı.
