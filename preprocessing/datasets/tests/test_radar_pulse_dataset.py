@@ -24,7 +24,7 @@ Outputs only to stdout — no figure. The whole script should complete
 in well under a minute on a modern laptop CPU.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

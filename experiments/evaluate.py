@@ -1,15 +1,15 @@
-"""Test-set evaluation for Module C experiments (Module D-aware output).
+"""Test-set evaluation for the trained experiments.
 
 Evaluates a trained checkpoint on the frozen TEST split and produces the
 full metric suite the paper's Results section needs, in a standard format
-that Module D can later read across all 9 experiments for comparison.
+that the analysis scripts later read across all 9 experiments.
 
 What it computes
 ----------------
 - Overall test accuracy and loss
 - 8x8 confusion matrix (raw counts + row-normalised) -> figure
 - Per-class precision / recall / F1 (sklearn classification report)
-- Per-SNR accuracy over the 16-point grid -> the x-axis of Module D's
+- Per-SNR accuracy over the 16-point grid -> the x-axis of the
   "SNR robustness" curve -> figure
 - Per-(class x SNR) accuracy matrix (8 x 16) -> shows which class
   collapses at which SNR (e.g. Costas / CW at low SNR, predicted in
@@ -19,12 +19,12 @@ Determinism
 -----------
 The test Dataset is built with add_noise=True and a FIXED master_seed
 (same convention as validation in train.py), so the per-sample noise is
-fixed -> evaluation is bit-for-bit reproducible. Module D relies on this.
+fixed -> evaluation is bit-for-bit reproducible. The analysis scripts rely on this.
 
 Output layout (experiments/results/<name>/)
 -------------------------------------------
     test_metrics.json          # scalar + per-class + per-SNR summary
-    eval_arrays.npz            # raw arrays for Module D cross-experiment use
+    eval_arrays.npz            # raw arrays for cross-experiment analysis
                                #   labels, preds, snr, confusion, per_snr_acc,
                                #   class_snr_acc, class_names, snr_grid
     confusion_matrix.png

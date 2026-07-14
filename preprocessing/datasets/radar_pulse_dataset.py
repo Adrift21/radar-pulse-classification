@@ -1,7 +1,7 @@
 """
 PyTorch ``Dataset`` for the radar-pulse dataset.
 
-This is the runtime pipeline that connects everything Module B built:
+This is the runtime pipeline that connects the preprocessing components:
 
     HDF5 read  ->  AWGN at sample's intended SNR (runtime)
               ->  TF representation (STFT / CWD / WVD, on-the-fly)
@@ -16,7 +16,7 @@ Design choices (decisions.md, 2026-05-17 Dataset entry)
   ``num_workers > 0`` on Linux). PyTorch's recommended pattern.
 - **Per-sample seeding.** Each sample's noise realisation is keyed on
   ``master_seed + global_sample_idx``, so the (idx, seed) pair fully
-  determines what the model sees. This makes Module D's SNR-stratified
+  determines what the model sees. This makes the SNR-stratified
   evaluation bit-for-bit reproducible: same indices in eval mode ->
   same noise -> same predictions across runs.
 - **No epoch-level augmentation by default.** Adding ``epoch_seed`` is
@@ -24,7 +24,7 @@ Design choices (decisions.md, 2026-05-17 Dataset entry)
   (or we add an ``epoch`` arg) — but the default behaviour is fixed
   per-sample for evaluation reproducibility.
 - **TF representation chosen at construction time.** A single Dataset
-  instance commits to one of {stft, cwd, wvd}. Module C will create
+  instance commits to one of {stft, cwd, wvd}. Each experiment creates
   three separate Dataset/Loader pairs, one per representation, which
   matches the 3-mimari x 3-gosterim = 9 experiment matrix cleanly.
 
@@ -34,7 +34,7 @@ Public API
 - :func:`radar_pulse_worker_init` — DataLoader ``worker_init_fn``.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ class RadarPulseDataset(Dataset):
     Parameters
     ----------
     h5_path : str or Path
-        Path to ``dataset.h5`` (the file produced by Module A).
+        Path to ``dataset.h5`` (the file produced by the MATLAB generator).
     indices : array_like of int
         Global sample indices (within ``[0, N_total)``) that this Dataset
         instance covers. Caller is responsible for the train/val/test
@@ -199,7 +199,7 @@ class RadarPulseDataset(Dataset):
 
         # -- 3. Add AWGN at the sample's intended SNR (optional) -------
         if self.add_noise:
-            # Detect active region from the clean signal (Module A did
+            # Detect active region from the clean signal (the generator did
             # not export start/stop indices in the per-sample group;
             # we detect via magnitude threshold for now).
             active_idx = self._detect_active_region(signal)

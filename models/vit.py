@@ -1,4 +1,4 @@
-"""ViT-Small wrapper for radar pulse classification (Module C).
+"""ViT-Small wrapper for radar pulse classification.
 
 The third architecture in the 3-architecture x 3-representation matrix,
 and the Transformer counterpart to the CNN models (CustomCNN, ResNet-50).

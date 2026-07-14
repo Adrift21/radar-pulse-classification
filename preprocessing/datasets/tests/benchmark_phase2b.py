@@ -1,5 +1,5 @@
 """
-Phase 2b realistic throughput benchmark.
+Realistic throughput benchmark.
 
 Measures end-to-end DataLoader throughput on a class-balanced subset of
 the project's HDF5 dataset, across:
@@ -11,13 +11,13 @@ the project's HDF5 dataset, across:
 Total = 12 configurations, run sequentially on the same 200-sample
 subset (25 per class x 8 classes).
 
-The results inform Module C's DataLoader configuration choice. Output is
+The results inform the DataLoader configuration choice. Output is
 a printed table sortable by samples/sec, plus an inline recommendation.
 
 Outputs only to stdout. Total wall time ~5-8 min on a RTX 5050 laptop.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from preprocessing.datasets.radar_pulse_dataset import (  # noqa: E402
 
 H5_PATH = _PROJECT_ROOT / "data_generation" / "synthetic_samples" / "dataset.h5"
 
-# Module A dataset layout: 5000 samples per class, classes laid out
+# Dataset layout: 5000 samples per class, classes laid out
 # sequentially starting at idx = class * 5000.
 SAMPLES_PER_CLASS = 25
 NUM_CLASSES = 8
@@ -70,7 +70,7 @@ def _build_balanced_indices() -> np.ndarray:
     """200 indices: 25 from each of 8 classes."""
     indices = []
     for cls in range(NUM_CLASSES):
-        start = cls * 5000   # Module A layout
+        start = cls * 5000   # dataset layout
         indices.extend(range(start, start + SAMPLES_PER_CLASS))
     return np.array(indices, dtype=np.int64)
 
@@ -165,7 +165,7 @@ def _print_recommendations(results: List[BenchResult]) -> None:
 
     # Training-time projections (50 epochs, 28000 train samples)
     print()
-    print("Module C epoch-time projection (50 epochs, 28000 train samples):")
+    print("Epoch-time projection (50 epochs, 28000 train samples):")
     print("-" * 70)
     for repr_name in TF_REPRS:
         sub = [r for r in results if r.tf_repr == repr_name]
@@ -182,7 +182,7 @@ def main() -> int:
         print(f"ERROR: dataset not found at {H5_PATH}", file=sys.stderr)
         return 1
 
-    print("Phase 2b realistic throughput benchmark")
+    print("Realistic throughput benchmark")
     print(f"  dataset: {H5_PATH.name}")
     print(f"  samples: {TOTAL_SAMPLES} ({SAMPLES_PER_CLASS} per class x {NUM_CLASSES} classes)")
     print(f"  configs: {len(TF_REPRS)} TF x {len(NUM_WORKERS_GRID)} workers x {len(BATCH_SIZE_GRID)} batch")

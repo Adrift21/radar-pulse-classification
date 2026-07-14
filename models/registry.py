@@ -1,4 +1,4 @@
-"""Model registry: maps a config name string to a model factory (Module C).
+"""Model registry: maps a config name string to a model factory.
 
 Keeps experiments/train.py architecture-agnostic. The training script
 just calls ``build_model(cfg)``; adding ResNet-50 / ViT later is a

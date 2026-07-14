@@ -1,4 +1,4 @@
-"""Unit tests for CustomCNN (Module C baseline).
+"""Unit tests for CustomCNN (baseline).
 
 Run with:  pytest models/tests/test_custom_cnn.py -v
 

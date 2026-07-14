@@ -56,11 +56,11 @@ Design choices (see decisions.md, 2026-05-?? CWD entry)
 - Output shape : (n_freq, n_time) magnitude-positive, matching tftb
   convention and our Phase-1 STFT.
 - Downsampling : `time_step=32` and `n_freq=256` chosen to match Phase-1
-  STFT (256, 57) so that Module C can reuse the same input shape across
+  STFT (256, 57) so that the same input shape is reused across
   TF representations.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations
@@ -188,7 +188,7 @@ def compute_cwd(
     takes ~50-150 ms on a modern CPU.
 
     The output is suitable for direct use as a model input after the
-    standard dB-scale + per-sample normalization that Module C will apply
+    standard dB-scale + per-sample normalization that the training pipeline applies
     (same convention as STFT and WVD outputs).
     """
     # ----- 1. Input validation & normalization ----------------------------

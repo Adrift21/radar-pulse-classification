@@ -18,7 +18,7 @@ Outputs
   preprocessing/noise/tests/outputs/awgn_lfm_snr_sweep.png
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""ResNet-50 wrapper for radar pulse classification (Module C).
+"""ResNet-50 wrapper for radar pulse classification.
 
 The second architecture in the 3-architecture x 3-representation matrix.
 A standard ImageNet-pretrained ResNet-50 backbone (timm), adapted to the

@@ -16,7 +16,7 @@ Outputs
   preprocessing/time_frequency/tests/outputs/wvd_clean_8classes.png
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

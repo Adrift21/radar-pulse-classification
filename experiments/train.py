@@ -1,4 +1,4 @@
-"""Training entry point for Module C experiments.
+"""Training entry point for the experiments.
 
 One config -> one training run. Architecture-agnostic: the model comes
 from the registry, the dataset/representation from the config. The same
@@ -19,7 +19,7 @@ For TRAINING we want a *different* noise realisation each epoch (genuine
 on-the-fly augmentation, the stated reason for the runtime AWGN design).
 We achieve this by bumping the train Dataset's ``master_seed`` every
 epoch: ``base_seed + epoch * EPOCH_SEED_STRIDE``. VAL/TEST keep a fixed
-seed -> deterministic, reproducible evaluation (Module D depends on it).
+seed -> deterministic, reproducible evaluation (the SNR-robustness analysis depends on it).
 
 Because ``persistent_workers=True`` would cache stale Dataset copies in
 the worker processes, the train DataLoader is rebuilt each epoch (cheap;

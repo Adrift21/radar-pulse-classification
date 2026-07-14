@@ -11,7 +11,7 @@ to get a (224, 224) float32 image in [0, 1], and lays them out in a
       row 2 : WVD  input images
       cols  : LFM | NLFM | Barker | Frank | Polyphase | Costas | CW | SteppedFH
 
-This is exactly what Module C will feed to the CNN / ResNet / ViT models.
+This is exactly what is fed to the CNN / ResNet / ViT models.
 The figure is the academic-paper "model input" centrepiece — it shows
 the data flowing from raw signal -> TF representation -> normalized
 image at the model's first conv layer.
@@ -21,7 +21,7 @@ Outputs
   preprocessing/transforms/tests/outputs/model_input_8classes_3repr.png
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

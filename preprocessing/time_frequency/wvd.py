@@ -11,7 +11,7 @@ reduces to the raw instantaneous correlation that defines WVD.
 
 This file therefore does not re-implement WVD from scratch. It simply
 calls ``compute_cwd(..., sigma=np.inf, ...)`` and returns the result
-with the same axis conventions as the STFT (Phase 1) and CWD (Phase 2)
+with the same axis conventions as the STFT and CWD
 modules — i.e. frequency axis fftshift'ed so f=0 lies in the middle.
 
 Verification against tftb
@@ -25,7 +25,7 @@ full-resolution LFM test signal (N=2048):
   - Total energy match (custom vs tftb)          : 7.117e+06 (bit-for-bit)
 
 The only difference between the two is FFT-shift convention: tftb leaves
-DC at index 0, while our convention (consistent with Phase 1 STFT)
+DC at index 0, while our convention (consistent with the STFT)
 centres f=0 in the middle of the frequency axis. This is purely a
 display choice; the underlying TF representation is identical.
 
@@ -35,15 +35,15 @@ Production + tftb Reference)".)
 Design choices
 --------------
 - Downsampling : time_step=32, n_freq=256, giving output (256, 64),
-  matching the Phase 1 STFT (256, 57) and Phase 2 CWD (256, 64) shapes.
-  Module C can use the same model input for all three TF representations.
+  matching the STFT (256, 57) and CWD (256, 64) shapes.
+  the same model input is used for all three TF representations.
 - Cross-term suppression : NONE. This is pure WVD by design — it is the
   "no-smoothing" baseline against which CWD's cross-term suppression is
   compared in the academic results. A smoothed variant (Pseudo-WVD or
   Smoothed-Pseudo-WVD) is intentionally out of scope.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

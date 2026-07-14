@@ -1,4 +1,4 @@
-"""Custom CNN baseline for radar pulse classification (Module C).
+"""Custom CNN baseline for radar pulse classification.
 
 A compact VGG-style convolutional network used as the *baseline*
 architecture in the 3-architecture x 3-representation (STFT/CWD/WVD)

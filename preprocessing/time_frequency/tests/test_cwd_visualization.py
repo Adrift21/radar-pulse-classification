@@ -21,7 +21,7 @@ Not part of the production code path. Used for Phase-2 sign-off and as a
 diagnostic when revisiting CWD parameters.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ import numpy as np
 
 # Make sure the project root is on sys.path so that `preprocessing.*` is
 # importable when running the script directly. This mirrors what
-# test_stft_visualization.py does in Phase 1.
+# test_stft_visualization.py does.
 _THIS_FILE = Path(__file__).resolve()
 _PROJECT_ROOT = _THIS_FILE.parents[
     3

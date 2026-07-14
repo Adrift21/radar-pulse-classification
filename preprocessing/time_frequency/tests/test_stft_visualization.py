@@ -9,11 +9,11 @@ dB-scale magnitude spectrograms.
 Why longest pulse: longer pulses fill more of the 2048-sample frame, so each
 class's TF signature is easier to read in a single visualization. Picking
 the longest also doubles as a sanity check — each class's longest sample
-should be near the upper bound (20 µs) if Module A's uniform [1, 20] µs draw
+should be near the upper bound (20 µs) if the generator's uniform [1, 20] µs draw
 is working correctly.
 
 Also prints a per-class pulse-width statistics table (min / median / max /
-count) to the terminal. This validates that Module A's pulse_width_us draw
+count) to the terminal. This validates that the generator's pulse_width_us draw
 matches the documented uniform [1, 20] µs (or [4, 20] µs for Frank/Polyphase).
 
 Output:
@@ -134,7 +134,7 @@ def print_pulse_width_table(
     selected_pulse_widths_us: np.ndarray,
 ) -> None:
     """
-    Print a per-class pulse-width statistics table to validate Module A's
+    Print a per-class pulse-width statistics table to validate the generator's
     uniform [1, 20] µs (or [4, 20] µs for Frank/Polyphase) draw.
     """
     header = f"{'Class':<12} {'Count':>7} {'Min':>8} {'Median':>8} {'Max':>8} {'Selected':>10}"
@@ -181,7 +181,7 @@ def main() -> int:
     if not DATASET_PATH.exists():
         print(f"[ERROR] Dataset not found: {DATASET_PATH}", file=sys.stderr)
         print(
-            "Generate it first via Module A "
+            "Generate it first via the MATLAB generator "
             "(data_generation/matlab/main_generate_dataset.m).",
             file=sys.stderr,
         )

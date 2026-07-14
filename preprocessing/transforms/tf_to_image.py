@@ -3,7 +3,7 @@ Time-frequency representation -> model input image.
 
 A single function, :func:`tf_to_image`, converts a raw TF magnitude
 matrix (output of ``compute_stft``, ``compute_cwd``, or ``compute_wvd``)
-into the float-tensor model input that Module C will consume.
+into the float-tensor model input the networks consume.
 
 Pipeline
 --------
@@ -21,20 +21,20 @@ Design choices (decisions.md, 2026-05-17 TF-to-image entry)
   the un-normalized peak. (Global z-score normalisation was considered
   and rejected because adding AWGN changes per-sample mean/std and
   would create train/test inconsistencies. See decisions.md entry.)
-- **Single channel.** Output is one channel; Module C's first conv
+- **Single channel.** Output is one channel; the model's first conv
   layer (``Conv2d(in_channels=1, ...)``) is responsible for expanding.
   This keeps disk/RAM small and avoids redundant RGB triplication.
 - **224 x 224 output.** Standard ResNet / ViT input size; lets all
   three TF representations (STFT (256, 57), CWD (256, 64), WVD
   (256, 64)) feed the *same* model architecture for an apples-to-apples
-  comparison across Module C's nine experiments.
+  comparison across the nine experiments.
 - **Linear interpolation by default.** Time axis upsamples (~57-64 ->
   224), frequency axis downsamples (256 -> 224); ``cv2.INTER_LINEAR``
   is well-behaved in both directions and is the de facto standard for
   spectrogram-like images.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

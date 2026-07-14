@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Parameter count + FLOPs for the 3 architectures (Module C resource-efficiency table).
+"""Parameter count + FLOPs for the 3 architectures (resource-efficiency table).
 
 Instantiates each architecture via the project's own model registry (num_classes=8,
 in_channels=1, 224x224 input) and reports total/trainable parameters and forward

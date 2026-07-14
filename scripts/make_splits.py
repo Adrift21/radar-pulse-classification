@@ -3,8 +3,8 @@
 This script reads ONLY the label and SNR vectors from dataset.h5 (not the
 signals themselves), produces a 70/15/15 split that is stratified jointly
 on (class, SNR), and writes the index arrays to a single .npz file that
-every experiment (Module C) and the SNR-robustness analysis (Module D)
-will read. Freezing the split guarantees all 9 experiments and Module D
+every experiment  and the SNR-robustness analysis
+will read. Freezing the split guarantees all 9 experiments and the analysis
 see the exact same test set -- the cleanest setup for fair, reproducible
 academic comparison (decisions.md, 2026-05-04 Train/Val/Test entry).
 
@@ -14,7 +14,7 @@ We stratify on the joint key (label, snr_db). With 8 classes x 16 SNR
 points = 128 groups and ~312 samples per group, even the smallest split
 (15% test ~= 47 samples/group) is comfortable for sklearn's stratified
 splitter. This guarantees the test set contains every (class, SNR) cell,
-which Module D's SNR-stratified accuracy curves depend on.
+which the SNR-stratified accuracy curves depend on.
 
 HDF5 reading convention
 -----------------------
@@ -157,7 +157,7 @@ def verify_splits(
             f"{name} class imbalance: {cls_frac}"
         )
 
-    # 4) SNR distribution preserved in the test set (Module D depends on it)
+    # 4) SNR distribution preserved in the test set (the SNR-robustness analysis depends on it)
     snr_unique = np.unique(snr_db)
     for name, idx in [("train", train_idx), ("val", val_idx), ("test", test_idx)]:
         counts = np.array([np.sum(snr_db[idx] == s) for s in snr_unique])

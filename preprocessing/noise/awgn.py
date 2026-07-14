@@ -4,7 +4,7 @@ Additive White Gaussian Noise (AWGN) — runtime helper.
 This module exposes a single function, :func:`add_awgn`, that adds complex
 AWGN to a (typically already padded) baseband signal at a target SNR.
 It is the Python-side counterpart of ``data_generation/matlab/utils/add_awgn.m``
-in Module A; the two implementations follow exactly the same convention
+in MATLAB; the two implementations follow exactly the same convention
 so that a sample's "intended SNR" attribute in ``dataset.h5`` is honoured
 at runtime when the AWGN is actually realised.
 
@@ -31,7 +31,7 @@ See also
   on-the-fly)" — chose on-the-fly in DataLoader.
 
 Author: Kaan Emre Evci
-Project: Radar Pulse Classification (Module B, Phase 2b)
+Project: Radar Pulse Classification
 """
 
 from __future__ import annotations

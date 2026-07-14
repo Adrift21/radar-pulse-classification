@@ -62,20 +62,20 @@ slprj/
 *.mat.bak
 
 # ============================================
-# Veri ve Model Dosyaları (ÇOK ÖNEMLİ)
+# Data and model files (IMPORTANT)
 # ============================================
-# Sentetik veri (yeniden üretilebilir, GitHub'da yer kaplar)
+# Synthetic dataset (regenerable; too large for GitHub)
 data_generation/synthetic_samples/*
 !data_generation/synthetic_samples/.gitkeep
 
 
-# Eğitim çıktıları
+# Training outputs
 experiments/checkpoints/*
 !experiments/checkpoints/.gitkeep
 experiments/results/*
 !experiments/results/.gitkeep
 
-# Model ağırlıkları
+# Model weights
 *.pth
 *.pt
 *.ckpt
@@ -84,21 +84,19 @@ experiments/results/*
 *.onnx
 *.pb
 
-# Büyük veri formatları
+# Large data formats
 *.npy
 *.npz
-!configs/splits.npz
 *.mat
 *.tfrecord
 *.parquet
 
-# Splits istisnası — küçük (~960 KB), reproducibility için git'e dahil (decisions.md 2026-05-18)
-!data_generation/synthetic_samples/splits/
-!data_generation/synthetic_samples/splits/*.npy
-!data_generation/synthetic_samples/splits/*.json
+# Exception: the frozen train/val/test split is small and must be versioned so that
+# results are reproducible without regenerating it. See docs/dataset.md.
+!configs/splits.npz
 
 # ============================================
-# Loglar ve geçici dosyalar
+# Logs and temporary files
 # ============================================
 *.log
 logs/
@@ -108,7 +106,7 @@ wandb/
 mlruns/
 
 # ============================================
-# Doküman geçici dosyaları
+# LaTeX build artefacts
 # ============================================
 paper/**/*.aux
 paper/**/*.bbl
@@ -126,7 +124,7 @@ paper/**/*.toc
 desktop.ini
 
 # ============================================
-# Kişisel/lokal config (paylaşılmayacak)
+# Personal/local config (never shared)
 # ============================================
 configs/local.yaml
 .env

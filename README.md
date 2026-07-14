@@ -20,19 +20,53 @@ as a function of SNR rather than at a single operating point. Three architecture
 benchmarked on an identical, frozen data split to isolate the effect of
 representation and architecture.
 
-**Status:** 🚧 Active development. STFT and CWD experiments complete; WVD
-experiments in progress.
+**Status:** All nine experiments (3 representations × 3 architectures) are complete
+and analysed. Manuscript in preparation.
 
-## Key Contributions
+## Key Findings
 
-- Controlled comparison of three time–frequency representations (STFT, CWD, WVD)
-  for radar pulse classification, on a shared frozen train/val/test split.
-- Benchmark of three architectures (custom CNN, ResNet-50, ViT-Small) under
-  identical training and evaluation conditions.
-- SNR robustness analysis across −10 dB to +20 dB, including per-class and
-  per-SNR accuracy breakdowns.
-- Grad-CAM based explainability of what the models attend to in the
-  time–frequency plane.
+**1. The Wigner–Ville Distribution collapses at low SNR.** This is the headline
+result. Averaged over architectures, WVD trails STFT/CWD by ~9 points overall — but
+that average hides the mechanism. The entire gap lives in the low-SNR regime:
+
+| SNR | STFT | CWD | WVD |
+|---|---|---|---|
+| −10 dB | 84.8% | 84.1% | **24.8%** |
+| −6 dB | 97.6% | — | 76.2% |
+| 0 dB | 98.1% | — | 96.2% |
+| ≥ +6 dB | 99.7% | 99.6% | 99.3% |
+
+At −10 dB the WVD is barely above the 12.5% chance level for 8 classes, while above
++2 dB all three representations are practically indistinguishable. The cause is
+cross-term interference: the WVD is a quadratic distribution, so additive noise
+generates noise×signal and noise×noise cross-terms that spread across the entire
+time–frequency plane and drown the signature. The STFT (linear) and the CWD (whose
+Choi–Williams kernel suppresses cross-terms) are far more resilient. This is visible
+directly in `analysis/qualitative_tf_lfm.png`.
+
+**2. A compact CNN beats ImageNet-scale backbones.** The 1.77M-parameter custom CNN
+achieves the highest accuracy of all nine models while using ~13× fewer parameters
+and ~1.5× fewer FLOPs than ResNet-50 or ViT-Small. An ImageNet-scale backbone is
+unnecessary for this task.
+
+**3. Representation matters far more than architecture.** Architectures differ by
+≤ 1 point within a representation family; representations differ by up to 60 points
+at −10 dB.
+
+## Results
+
+Overall accuracy on the noisy test set (all SNRs, −10 dB to +20 dB), on the shared
+frozen split:
+
+| Architecture | Params | STFT | CWD | WVD |
+|---|---|---|---|---|
+| Custom CNN | 1.77M | **98.22%** | 97.57% | 89.57% |
+| ResNet-50 | 23.52M | 98.00% | 97.55% | 88.43% |
+| ViT-Small | 21.47M | 97.45% | 97.15% | 88.85% |
+
+Full per-SNR breakdowns, confusion matrices, statistical significance testing, and
+the complete interpretation are in [`docs/results_summary.md`](./docs/results_summary.md).
+Per-experiment artefacts live under `experiments/results/`.
 
 ## Dataset
 
@@ -43,41 +77,29 @@ grid spanning −10 dB to +20 dB in 2 dB steps.
 
 Additive white Gaussian noise is **not** baked into the stored signals. Instead,
 AWGN is applied at training time inside the data loader, computed against the
-active-region signal power, so a given clean signal can be augmented with
-different noise realisations across epochs. This avoids overfitting to a fixed
-noise pattern and keeps the evaluation methodologically honest.
+active-region signal power, so a given clean signal is paired with a different noise
+realisation each epoch. This avoids overfitting to a fixed noise pattern.
 
-## Results
+All nine experiments share one frozen 70/15/15 split (`configs/splits.npz`,
+28,000 / 6,000 / 6,000, jointly stratified on class and SNR), which is what makes the
+comparison apples-to-apples.
 
-Overall accuracy on the noisy test set (all SNRs, −10 dB to +20 dB), on the
-shared frozen split:
-
-| Architecture | STFT | CWD | WVD |
-|---|---|---|---|
-| Custom CNN | 98.22% | 97.57% | 🚧 in progress |
-| ResNet-50 | 98.00% | 97.55% | 🚧 in progress |
-| ViT-Small | 97.45% | 97.15% | 🚧 in progress |
-
-Per-SNR robustness curves, confusion matrices, and per-class/per-SNR breakdowns
-for each experiment are stored under `experiments/results/`.
+Full details — including the MATLAB column-major HDF5 storage convention that every
+reader must account for — are in [`docs/dataset.md`](./docs/dataset.md).
 
 ## Repository Structure
 
 ```
 radar-pulse-classification/
 ├── data_generation/   # MATLAB scripts for synthetic radar signal generation
-├── preprocessing/     # Time-frequency extraction, dataset, and frozen splits
+├── preprocessing/     # Time-frequency transforms, AWGN, and the dataset class
 ├── models/            # Custom CNN, ResNet-50, and ViT-Small architectures
-├── experiments/       # Training/evaluation pipeline, configs, and results
-├── configs/           # Experiment configuration files (YAML)
-├── analysis/          # SNR robustness and comparison figures
-├── scripts/           # Helper scripts (splits, setup, etc.)
-├── tests/             # Unit tests
-└── docs/              # Project context and design-decision log
+├── experiments/       # Training/evaluation pipeline and per-experiment results
+├── configs/           # Experiment configs (YAML) and the frozen split (splits.npz)
+├── analysis/          # Comparison figures, significance tests, complexity table
+├── scripts/           # Split generation
+└── docs/              # Dataset reference, decision log, results summary
 ```
-
-Additional `notebooks/` and `paper/` directories will be added during the
-write-up phase.
 
 ## Requirements
 
@@ -110,17 +132,38 @@ addpath(genpath(pwd))
 main_generate_dataset
 ```
 
+Regenerate the frozen split (optional — `configs/splits.npz` is committed):
+
+```bash
+python scripts/make_splits.py --out configs/splits.npz
+```
+
 Train and evaluate an experiment (run from the repository root):
 
 ```bash
 # Train — e.g. STFT × custom CNN
-python -m experiments.train --config configs/stft_custom_cnn.yaml
+python experiments/train.py --config configs/stft_custom_cnn.yaml
 
 # Evaluate the trained checkpoint on the frozen test split
-python -m experiments.evaluate --config configs/stft_custom_cnn.yaml
+python experiments/evaluate.py --config configs/stft_custom_cnn.yaml
 ```
 
-More detailed setup, data-generation, and training notes live in [`docs/`](./docs/).
+Reproduce the cross-experiment analysis (reads the committed `test_metrics.json` files,
+so it runs without any checkpoints):
+
+```bash
+python analysis/compare_all_experiments.py     # SNR robustness figures + summary table
+python analysis/statistical_significance.py    # Wilson CIs, bootstrap, z-test, McNemar
+python analysis/model_complexity.py            # parameter and FLOP counts
+python analysis/qualitative_tf_illustration.py # STFT/CWD/WVD vs SNR illustration
+```
+
+## Documentation
+
+- [`docs/dataset.md`](./docs/dataset.md) — dataset layout, HDF5 conventions, split, noise strategy
+- [`docs/results_summary.md`](./docs/results_summary.md) — full results, figures, and interpretation
+- [`docs/decisions.md`](./docs/decisions.md) — chronological design-decision log (the source for
+  the manuscript's Methods section)
 
 ## Citation
 

@@ -1,4 +1,4 @@
-"""Experiment configuration: dataclasses + YAML loader (Module C).
+"""Experiment configuration: dataclasses + YAML loader.
 
 A single YAML file fully describes one experiment in the
 3-architecture x 3-representation (= 9) matrix. Every training run reads
@@ -60,7 +60,7 @@ class DataCfg:
 
 @dataclass
 class ModelCfg:
-    name: str = "custom_cnn"  # registry key (Module C)
+    name: str = "custom_cnn"  # registry key
     # Architecture-specific kwargs passed to the constructor.
     kwargs: Dict[str, Any] = field(default_factory=lambda: {"dropout": 0.5})
 
@@ -86,8 +86,8 @@ class OptimCfg:
 
 @dataclass
 class LoaderCfg:
-    batch_size: int = 64  # Phase 2b benchmark optimum
-    num_workers: int = 4  # Phase 2b benchmark optimum
+    batch_size: int = 64  # throughput-benchmark optimum
+    num_workers: int = 4  # throughput-benchmark optimum
     pin_memory: bool = True
     persistent_workers: bool = True
     prefetch_factor: int = 2
