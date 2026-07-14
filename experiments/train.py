@@ -48,6 +48,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from experiments.config import Config, load_config, save_config
+from experiments.splits import load_splits
 from models.registry import build_model
 from preprocessing.datasets.radar_pulse_dataset import (
     RadarPulseDataset,
@@ -77,15 +78,6 @@ def set_global_seeds(seed: int) -> None:
 # ---------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------
-def load_splits(path: str | Path) -> Dict[str, np.ndarray]:
-    data = np.load(path, allow_pickle=True)
-    return {
-        "train": data["train_idx"],
-        "val": data["val_idx"],
-        "test": data["test_idx"],
-    }
-
-
 def make_dataset(
     cfg: Config, indices: np.ndarray, master_seed: int
 ) -> RadarPulseDataset:
@@ -231,7 +223,7 @@ def train(cfg: Config, device: torch.device, max_epochs: int | None = None) -> N
     writer = SummaryWriter(log_dir=str(res_dir / "tb"))
 
     # --- Data ---------------------------------------------------------
-    splits = load_splits(cfg.data.splits_path)
+    splits = load_splits(cfg.data.splits_path, cfg.data.dataset_path)
     print(
         f"Splits: train={splits['train'].size}, val={splits['val'].size}, "
         f"test={splits['test'].size}"

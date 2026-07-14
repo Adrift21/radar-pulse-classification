@@ -69,11 +69,15 @@ data_generation/synthetic_samples/*
 !data_generation/synthetic_samples/.gitkeep
 
 
-# Training outputs
+# Training outputs.
+# Checkpoints are far too large to version.
 experiments/checkpoints/*
 !experiments/checkpoints/.gitkeep
-experiments/results/*
-!experiments/results/.gitkeep
+# Results ARE versioned: they are small and they are the paper's evidence (metrics,
+# figures, configs, and the per-sample predictions in eval_arrays.npz -- without which
+# the predictions would be lost along with the pruned checkpoints). Only the bulky
+# TensorBoard event files are excluded.
+experiments/results/*/tb/
 
 # Model weights
 *.pth
@@ -94,6 +98,9 @@ experiments/results/*
 # Exception: the frozen train/val/test split is small and must be versioned so that
 # results are reproducible without regenerating it. See docs/dataset.md.
 !configs/splits.npz
+
+# Exception: per-sample test predictions (~125 KB each), see the results rule above.
+!experiments/results/*/eval_arrays.npz
 
 # ============================================
 # Logs and temporary files

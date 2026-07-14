@@ -1,5 +1,8 @@
 # Radar Pulse Classification
 
+[![tests](https://github.com/Adrift21/radar-pulse-classification/actions/workflows/tests.yml/badge.svg)](https://github.com/Adrift21/radar-pulse-classification/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 Deep-learning classification of radar pulse waveforms from their time–frequency
 representations, with a focus on robustness under low signal-to-noise ratio (SNR)
 conditions.
@@ -157,6 +160,24 @@ python analysis/statistical_significance.py    # Wilson CIs, bootstrap, z-test, 
 python analysis/model_complexity.py            # parameter and FLOP counts
 python analysis/qualitative_tf_illustration.py # STFT/CWD/WVD vs SNR illustration
 ```
+
+## Tests
+
+The automated test suite is **dataset-free by design**, so it runs on a bare clone
+(and in CI) without the 260 MB `dataset.h5`:
+
+```bash
+pytest
+```
+
+It pins the correctness claims the methodology rests on: that AWGN achieves the
+requested SNR against active-region power, that the WVD is exactly the CWD in the
+σ→∞ limit, that the three transforms return the documented shapes and stay finite,
+and that `tf_to_image` yields the (224, 224) float32 image in [0, 1] the models consume.
+
+> Note: the `test_*.py` files under `preprocessing/*/tests/` are **not** unit tests
+> despite the name — they are manual validation/figure scripts that require the
+> dataset. They are excluded from collection; run them directly if you want the figures.
 
 ## Documentation
 

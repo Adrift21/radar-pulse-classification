@@ -60,6 +60,7 @@ from sklearn.metrics import (
 )
 
 from experiments.config import Config, load_config
+from experiments.splits import load_splits
 from models.registry import build_model
 from preprocessing.datasets.radar_pulse_dataset import (
     RadarPulseDataset,
@@ -70,18 +71,13 @@ from preprocessing.datasets.radar_pulse_dataset import (
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
-def load_splits(path: str | Path) -> np.ndarray:
-    data = np.load(path, allow_pickle=True)
-    return data["test_idx"]
-
-
 def read_snr_and_classnames(
     h5_path: str | Path, test_idx: np.ndarray
 ) -> Tuple[np.ndarray, List[str]]:
     """Read per-sample SNR (for the test indices) and class name strings.
 
     Follows the MATLAB column-major convention (1-D arrays stored (1, N),
-    ravel()'d). See project_context.md.
+    ravel()'d). See docs/dataset.md.
     """
     with h5py.File(h5_path, "r") as f:
         snr_all = np.asarray(f["snr_db"][:]).ravel().astype(np.float32)
@@ -231,7 +227,7 @@ def evaluate(cfg: Config, checkpoint: Path, device: torch.device) -> Dict:
     res_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Data: TEST split, deterministic noise -----------------------
-    test_idx = load_splits(cfg.data.splits_path)
+    test_idx = load_splits(cfg.data.splits_path, cfg.data.dataset_path)["test"]
     snr_test, class_names = read_snr_and_classnames(cfg.data.dataset_path, test_idx)
     snr_grid = np.arange(-10, 21, 2, dtype=np.float32)
 

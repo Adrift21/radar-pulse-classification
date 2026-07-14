@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: Radar Pulse Classification with Deep Learning
+message: >-
+  If you use this software or its results, please cite it using
+  the metadata from this file.
+type: software
+authors:
+  - given-names: Kaan Emre
+    family-names: Evci
+repository-code: "https://github.com/Adrift21/radar-pulse-classification"
+abstract: >-
+  Deep-learning classification of eight radar pulse waveform families from their
+  time-frequency representations, with a focus on robustness under low signal-to-noise
+  ratio conditions. Three time-frequency representations (STFT, Choi-Williams, and
+  Wigner-Ville distributions) are compared across three architectures (a compact custom
+  CNN, ResNet-50, and ViT-Small) on an identical frozen split spanning -10 dB to +20 dB.
+keywords:
+  - radar signal classification
+  - time-frequency analysis
+  - Wigner-Ville distribution
+  - Choi-Williams distribution
+  - deep learning
+  - electronic warfare
+  - SNR robustness
+license: MIT
+version: 1.0.0
+date-released: "2026-07-14"

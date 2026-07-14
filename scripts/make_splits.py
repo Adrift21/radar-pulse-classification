@@ -20,7 +20,7 @@ HDF5 reading convention
 -----------------------
 dataset.h5 was written by MATLAB save('-v7.3'), which stores axes in
 column-major order. The 1-D vectors are therefore shaped (1, N) and must
-be ravel()'d. See project_context.md "HDF5 Storage Convention".
+be ravel()'d. See docs/dataset.md.
 
 Usage
 -----
@@ -36,13 +36,14 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
 import sys
 from pathlib import Path
 
-import h5py
 import numpy as np
 from sklearn.model_selection import train_test_split
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from experiments.splits import dataset_fingerprint, read_labels_and_snr  # noqa: E402
 
 # --- Project defaults (decisions.md) ------------------------------------
 DEFAULT_DATASET = "data_generation/synthetic_samples/dataset.h5"
@@ -53,32 +54,6 @@ TEST_FRAC = 0.15
 MASTER_SEED = 42
 
 
-# ---------------------------------------------------------------------
-# HDF5 reading (column-major convention)
-# ---------------------------------------------------------------------
-def read_labels_and_snr(h5_path: Path) -> tuple[np.ndarray, np.ndarray]:
-    """Read (labels, snr_db) from dataset.h5, handling the (1, N) layout."""
-    with h5py.File(h5_path, "r") as f:
-        labels = np.asarray(f["labels"][:]).ravel().astype(np.int64)
-        snr_db = np.asarray(f["snr_db"][:]).ravel().astype(np.float32)
-    if labels.shape != snr_db.shape:
-        raise ValueError(
-            f"labels {labels.shape} and snr_db {snr_db.shape} length mismatch"
-        )
-    return labels, snr_db
-
-
-def dataset_fingerprint(labels: np.ndarray, snr_db: np.ndarray) -> str:
-    """A cheap content hash so we can detect if the dataset changed.
-
-    Hashing labels + snr (not the heavy signals) is enough to catch a
-    different dataset while staying fast.
-    """
-    h = hashlib.sha256()
-    h.update(labels.tobytes())
-    # round SNR to avoid float noise across platforms before hashing
-    h.update(np.round(snr_db, 6).astype(np.float32).tobytes())
-    return h.hexdigest()[:16]
 
 
 # ---------------------------------------------------------------------
