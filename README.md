@@ -161,6 +161,15 @@ python analysis/model_complexity.py            # parameter and FLOP counts
 python analysis/qualitative_tf_illustration.py # STFT/CWD/WVD vs SNR illustration
 ```
 
+Repeat every experiment with additional random seeds to estimate training-time variance
+(each seed varies weight init and data ordering; the test set is held fixed). The runner is
+resumable, and `aggregate_seeds.py` turns the runs into mean ± std over seeds:
+
+```bash
+python experiments/run_multiseed.py            # seeds 43,44 x 9 experiments (seed 42 = canonical)
+python experiments/aggregate_seeds.py          # mean ± std table + figure
+```
+
 ## Tests
 
 The automated test suite is **dataset-free by design**, so it runs on a bare clone

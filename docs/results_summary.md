@@ -235,10 +235,17 @@ representation matters far more than the choice of architecture.**
 
 - [ ] Place the main figure and table into the manuscript's Results section and write the captions.
       (No `paper/` directory exists yet.)
-- [ ] **Multi-seed repeat runs (3 seeds × 9 experiments).** Deferred. Not required for the headline
-      finding (the WVD collapse is far too large to be threatened by seed variance), but it is what
-      would make the fine-grained claims — STFT > CWD, and "the Custom-CNN is the best architecture"
-      — fully defensible, since the current intervals cover test-set sampling error only (§5).
+- [ ] **Multi-seed repeat runs (3 seeds × 9 experiments).** Runner is ready
+      (`experiments/run_multiseed.py`); the runs themselves are pending (hours each on one GPU).
+      Not required for the headline finding (the WVD collapse is far too large to be threatened by
+      seed variance), but it is what makes the fine-grained claims — STFT > CWD, and "the
+      Custom-CNN is the best architecture" — fully defensible, since the current intervals cover
+      test-set sampling error only (§5).
+      - Protocol: each seed varies weight init + data ordering (`experiment.seed`); `master_seed`
+        is held fixed so validation/test are identical across seeds. Seed 42 = the canonical
+        results already on disk, so only seeds {43, 44} need to run.
+      - Run: `python experiments/run_multiseed.py` (resumable). Then aggregate into mean ± std
+        with `python experiments/aggregate_seeds.py`.
 - [ ] **STFT/CWD per-SNR confusion and paired tests.** Requires their per-sample predictions, which
       need retraining (checkpoints were pruned). WVD predictions are now versioned
       (`eval_arrays.npz`), so re-running STFT/CWD once would close this permanently.

@@ -134,6 +134,9 @@ desktop.ini
 # Personal/local config (never shared)
 # ============================================
 configs/local.yaml
+# Auto-generated per-seed configs (run_multiseed.py). Ephemeral: the exact config used is
+# always saved alongside each run's results as results/<name>/config.yaml.
+configs/generated/
 .env
 secrets.yaml
 preprocessing/**/tests/outputs/
