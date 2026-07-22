@@ -240,7 +240,8 @@ representation matters far more than the choice of architecture.**
       would make the fine-grained claims — STFT > CWD, and "the Custom-CNN is the best architecture"
       — fully defensible, since the current intervals cover test-set sampling error only (§5).
 - [ ] **STFT/CWD per-SNR confusion and paired tests.** Requires their per-sample predictions, which
-      need retraining (checkpoints were pruned). Alternatively, persist predictions as a standard
-      training output so this never recurs.
-- [ ] (Optional) Reinstate a dataset-hash guardrail on the frozen split, so a regenerated dataset
-      cannot silently be paired with a stale split (see the 2026-05-18 entry in `decisions.md`).
+      need retraining (checkpoints were pruned). WVD predictions are now versioned
+      (`eval_arrays.npz`), so re-running STFT/CWD once would close this permanently.
+- [x] Dataset-fingerprint guardrail on the frozen split (`experiments/splits.py`): `train.py` and
+      `evaluate.py` now verify `dataset.h5` against the fingerprint in `configs/splits.npz` and raise
+      on mismatch.
