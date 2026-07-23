@@ -101,8 +101,8 @@ yet two aspects remain under-examined in the radar-classification literature.
 First, the TF representation is typically fixed a priori rather than compared
 under identical conditions. Second, accuracy is often reported at a single,
 favourable SNR, leaving the low-SNR behaviour---the operationally decisive
-regime---uncharacterised. \TODO{sharpen this positioning against 2--3 specific
-prior papers once the Related Work citations are verified.}
+regime---uncharacterised. Section~\ref{sec:related} details how prior work
+relates to these two gaps.
 
 This paper isolates the effect of the TF representation through a controlled
 comparison. We hold the dataset, the frozen split, and the training protocol
@@ -138,25 +138,53 @@ backbones on this task, at an order of magnitude fewer parameters.
 
 %==============================================================================
 \section{Related Work}
+\label{sec:related}
 %==============================================================================
-\TODO{This section is a skeleton. Populate each paragraph with specific,
-verified citations from your literature review; do not rely on the placeholder
-entries in refs.bib.}
+\textbf{Intra-pulse modulation recognition.} Recognising the intra-pulse
+modulation of intercepted radar pulses is a long-standing problem in electronic
+support, driven by the proliferation of low-probability-of-intercept (LPI)
+waveforms---frequency-modulated, phase-coded, and frequency-hopping
+families---whose design and detection are treated comprehensively
+by~\cite{pace2009lpi}. Classical recognisers relied on hand-crafted features
+(instantaneous frequency, phase statistics, and transform-domain descriptors)
+followed by a statistical classifier. More recent work reframes the task as image
+recognition over a time--frequency (TF) image and applies deep networks:
+convolutional models have been used for LPI radar waveform
+recognition~\cite{kong2018cnn} and for radar intra-pulse modulation
+recognition~\cite{qu2018intrapulse}, and the same TF-plus-CNN methodology has been
+applied to the closely related problem of recognising communications
+(cognitive-radio) waveforms drawn from overlapping families~\cite{zhang2017cnn}.
+These systems report strong accuracy, but two limitations recur and motivate our
+study: the TF representation is chosen a priori rather than compared, and results
+are frequently summarised at a single, favourable SNR.
 
-\textbf{Intra-pulse modulation recognition.} \TODO{classical feature-based and
-recent deep-learning approaches to radar signal classification.}
+\textbf{Time--frequency representations.} The choice of TF representation governs
+what structure the classifier sees. The linear STFT/spectrogram is artefact-free
+but resolution-limited by its window. Cohen's class of bilinear
+distributions~\cite{cohen1989} trades this off differently: the Wigner--Ville
+distribution attains the highest joint resolution but generates cross-terms, and
+reduced-interference distributions temper them through a smoothing kernel---the
+Choi--Williams exponential kernel~\cite{choi1989} being the canonical instance,
+later generalised by systematic kernel-design procedures~\cite{jeong1992kernel}.
+In the radar-recognition literature these representations are typically adopted
+individually, and awareness that cross-terms interact poorly with noise has
+prompted work on kernels with stronger anti-noise behaviour than the raw
+CWD~\cite{qu2018intrapulse}. What remains missing, and what we provide, is a
+\emph{controlled} comparison of STFT, CWD, and WVD under identical data, split,
+and training, with accuracy resolved as a function of SNR so that the low-SNR
+regime is characterised explicitly rather than averaged away.
 
-\textbf{Time--frequency representations for radar.} The STFT/spectrogram, the
-Wigner--Ville distribution~\cite{cohen1989}, and Cohen's-class kernels such as
-the Choi--Williams distribution~\cite{choi1989} are standard tools; the WVD
-offers high resolution but suffers cross-terms for multi-component signals, which
-reduced-interference distributions were designed to suppress. \TODO{cite radar
-papers that adopt each representation.}
-
-\textbf{Deep architectures.} Residual networks~\cite{he2016resnet} and vision
-transformers~\cite{dosovitskiy2021vit} are the standard backbones adapted here
-via transfer learning~\cite{wightman2019timm}. \TODO{cite prior use in radar TF
-classification.}
+\textbf{Deep architectures.} On the modelling side, two families dominate TF-image
+classification: deep convolutional networks such as ResNet~\cite{he2016resnet} and,
+more recently, vision transformers~\cite{dosovitskiy2021vit}, both commonly
+initialised from ImageNet weights via transfer learning and readily available
+through model libraries~\cite{wightman2019timm}. Prior radar studies tend to adopt
+a single backbone---often a bespoke CNN~\cite{kong2018cnn,qu2018intrapulse} or a
+pretrained network---without an apples-to-apples comparison at matched capacity.
+We instead benchmark a compact custom CNN against a pretrained ResNet-50 and a
+capacity-matched ViT-Small under a single protocol, which lets us separate the
+effect of architecture from that of the representation and quantify how little
+architectural complexity this task actually requires.
 
 %==============================================================================
 \section{Dataset and Signal Model}
