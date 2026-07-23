@@ -72,28 +72,54 @@ Choi--Williams distribution, deep learning, SNR robustness, electronic warfare.
 %==============================================================================
 \section{Introduction}
 %==============================================================================
-\IEEEPARstart{R}{adar} emitter identification and intra-pulse modulation
-recognition are central to electronic support measures: the intercepting
-receiver must label an incoming pulse by its modulation family, often from a
-single observation and under severe noise. A widely adopted pipeline converts
-the intercepted signal into a two-dimensional time--frequency (TF) image and
-classifies it with a convolutional or transformer network, casting a signal
-problem as image recognition.
+\IEEEPARstart{I}{ntra}-pulse modulation recognition is a core function of
+electronic support measures (ESM) and electronic intelligence: an intercepting
+receiver must label each incoming pulse by its modulation family, frequently from
+a single observation and without cooperation from the emitter. The task is made
+harder by modern low-probability-of-intercept (LPI) radars, which deliberately
+spread their energy in time and frequency using waveforms such as linear and
+non-linear frequency modulation, Barker and polyphase (Frank, P1--P4) codes,
+Costas and stepped frequency hopping, and continuous wave~\cite{pace2009lpi}. By
+design, such emitters are observed at low signal-to-noise ratio (SNR), so a
+practically useful classifier must remain reliable precisely where the signal is
+weakest.
 
-A large body of work reports high accuracy with this recipe, but two questions
-are under-examined. First, the TF representation is usually fixed a priori, yet
-different representations trade time--frequency resolution against artefact
-behaviour in ways that should matter most exactly when the signal is weak.
-Second, evaluation is frequently reported at a single, favourable SNR, whereas
-operational interception is dominated by low-SNR conditions. \TODO{2--4 sentences
-positioning against specific prior radar-classification papers; cite them here.}
+A now-standard approach recasts this signal problem as image recognition: the
+intercepted pulse is mapped to a two-dimensional time--frequency (TF)
+representation and classified with a convolutional or, more recently, a
+transformer network~\cite{zhang2016lpi,kong2018cnn,qu2018intrapulse}. The TF
+representation is the crux of this pipeline, because it determines what structure
+is exposed to the network. Yet the representations in common use embody very
+different trade-offs. The short-time Fourier transform (STFT) is linear and
+artefact-free but resolution-limited by its window. Quadratic (Cohen's-class)
+distributions such as the Wigner--Ville distribution (WVD) achieve far higher
+time--frequency resolution, at the cost of cross-terms; reduced-interference
+distributions such as the Choi--Williams distribution (CWD) introduce a kernel
+that suppresses those cross-terms~\cite{choi1989,cohen1989,jeong1992kernel}.
+These trade-offs interact with noise in ways that should matter most at low SNR,
+yet two aspects remain under-examined in the radar-classification literature.
+First, the TF representation is typically fixed a priori rather than compared
+under identical conditions. Second, accuracy is often reported at a single,
+favourable SNR, leaving the low-SNR behaviour---the operationally decisive
+regime---uncharacterised. \TODO{sharpen this positioning against 2--3 specific
+prior papers once the Related Work citations are verified.}
 
 This paper isolates the effect of the TF representation through a controlled
-comparison. We hold the dataset, the split, and the training protocol fixed and
-vary only (i) the representation---STFT, CWD, or WVD---and (ii) the
+comparison. We hold the dataset, the frozen split, and the training protocol
+fixed, and vary only (i) the representation---STFT, CWD, or WVD---and (ii) the
 architecture---a compact custom CNN, ResNet-50, or ViT-Small. Every model is
-trained and evaluated across the full $-10$ to $+20$~dB range, and accuracy is
-reported \emph{as a function of SNR} rather than at one operating point.
+trained and evaluated across the full $-10$ to $+20$~dB range on 40{,}000
+synthetic signals, and accuracy is reported \emph{as a function of SNR} rather
+than at a single operating point. This design lets us attribute performance
+differences to the representation and the architecture separately, and to
+characterise how each degrades as SNR falls.
+
+Our central finding is that the representation, not the architecture, dominates:
+STFT and CWD are robust across the SNR range, whereas the raw WVD collapses at low
+SNR---by 60 accuracy points at $-10$~dB---because noise-induced cross-terms fill
+the TF plane and bury the signature. Above $+2$~dB the three representations are
+essentially indistinguishable, which is precisely why single-operating-point
+evaluations miss the effect.
 
 \noindent\textbf{Contributions.}
 \begin{itemize}
