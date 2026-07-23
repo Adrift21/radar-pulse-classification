@@ -424,10 +424,21 @@ cross-terms at low SNR while STFT/CWD stay legible.}
 
 \subsection{What the Model Confuses}
 A per-SNR confusion analysis of the WVD models shows the errors change character
-with SNR: at $-10$~dB the confusion is diffuse, with predictions smeared toward
-frequency-agile ``sink'' classes (Costas, SteppedFH, NLFM)---consistent with a
-noise-filled plane---whereas by $-6$~dB the errors concentrate on genuinely
-similar pairs (LFM$\leftrightarrow$NLFM, Frank$\leftrightarrow$Polyphase).
+with SNR (Fig.~\ref{fig:confusion}): at $-10$~dB the confusion is diffuse, with
+predictions smeared toward frequency-agile ``sink'' classes (Costas, SteppedFH,
+NLFM)---consistent with a noise-filled plane---whereas by $-6$~dB the errors
+concentrate on genuinely similar pairs (LFM$\leftrightarrow$NLFM,
+Frank$\leftrightarrow$Polyphase) and the matrix is nearly diagonal.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{wvd_lowsnr_confusion_custom_cnn.png}
+\caption{Row-normalised confusion for WVD (custom CNN) at $-10$, $-8$, and
+$-6$~dB. The errors transition from diffuse and noise-driven at $-10$~dB (mass
+scattered toward the frequency-agile classes) to structured intra-family
+confusion by $-6$~dB, where the matrix is nearly diagonal.}
+\label{fig:confusion}
+\end{figure*}
 
 \subsection{Limitations}
 Several factors bound the scope of these conclusions. The dataset is synthetic and
