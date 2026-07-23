@@ -202,8 +202,22 @@ $+20$~dB in $2$~dB steps. Crucially, additive white Gaussian noise (AWGN) is
 measured against the active-region (pulse) power rather than the padded frame, so
 a clean signal can be paired with different noise realisations across epochs.
 Generation is fully seeded (per-sample seed $= 42 + \text{index}$) for
-reproducibility. \TODO{state the exact per-class parameter ranges you wish to
-disclose (see docs/decisions.md for the full specification).}
+reproducibility.
+
+Within each class, parameters are randomised to prevent the network from latching
+onto a single template (Table~\ref{tab:classes}). LFM sweeps a bandwidth
+$B\in[5,20]$~MHz in either direction; NLFM mixes quadratic (60\%) and sinusoidal
+(40\%) instantaneous-frequency laws; Barker codes are drawn from
+$\{B_7,B_{11},B_{13}\}$ with rectangular chips. The Frank and polyphase (P1--P4)
+codes use matrix order $N\in\{4,6,8\}$ at zero carrier ($f_c=0$), so their
+signatures are governed by the phase code rather than a carrier offset. Costas and
+stepped-frequency waveforms use $N\in\{5,6,7,8\}$ hops with a frequency step
+$\Delta f\in[2,5]$~MHz; the two are distinguished by ordering---Costas hops follow
+a permuted (Costas) sequence whereas stepped-frequency hops rise or fall
+monotonically. CW tones take a carrier drawn uniformly over the band with a 5\%
+Nyquist guard and a random initial phase. All frequencies respect the guard band
+at the $100$~MHz sampling rate, and the eight classes are balanced at exactly
+5{,}000 samples each.
 
 \begin{table}[t]
 \centering
@@ -412,10 +426,19 @@ noise-filled plane---whereas by $-6$~dB the errors concentrate on genuinely
 similar pairs (LFM$\leftrightarrow$NLFM, Frank$\leftrightarrow$Polyphase).
 
 \subsection{Limitations}
-The dataset is synthetic and mono-component; real intercepts include propagation
-effects, multiple emitters, and hardware impairments. The CWD kernel width and
-all TF grid sizes are fixed rather than tuned. \TODO{note any others you want to
-disclose.}
+Several factors bound the scope of these conclusions. The dataset is synthetic and
+mono-component, whereas real intercepts include propagation effects, hardware
+impairments, and multiple overlapping emitters; in particular, the WVD's inherent
+(signal-on-signal) cross-terms---distinct from the noise-driven cross-terms studied
+here---would appear for genuinely multi-component observations. The noise model is
+additive white Gaussian applied per pulse (a single look), without clutter,
+co-channel interference, or non-Gaussian effects, and without pulse-train
+integration that an operational receiver might exploit. The CWD kernel width and
+all TF grid sizes are fixed at sensible defaults rather than tuned, so the reported
+gaps reflect standard, untuned representations. Finally, the significance analysis
+in Section~V accounts for test-set sampling; the multi-seed study
+(Table~\ref{tab:main}) is what bounds training-time variance, and the fine-grained
+ordering among the strong configurations should be read in that light.
 
 %==============================================================================
 \section{Conclusion}
@@ -426,8 +449,10 @@ the choice of architecture. STFT and CWD are robust across the operational SNR
 range, whereas the raw WVD collapses at low SNR---by 60 points at $-10$~dB---owing
 to noise-driven cross-term interference. A compact 1.77M-parameter CNN matches
 ImageNet-scale backbones, indicating that representation quality, not model
-capacity, is the lever for this task. \TODO{one sentence of future work, e.g.
-real intercepts, adaptive/learned kernels, or multi-representation fusion.}
+capacity, is the lever for this task. Future work will test these findings on
+measured intercepts and multi-component scenarios, and explore adaptive or learned
+TF kernels and multi-representation fusion that could combine the WVD's resolution
+with the noise robustness of STFT and CWD.
 
 %==============================================================================
 \section*{Reproducibility}
