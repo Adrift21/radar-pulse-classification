@@ -1,0 +1,388 @@
+%==============================================================================
+% Radar Pulse Classification under Low SNR: A Controlled Comparison of
+% Time-Frequency Representations and Deep Architectures
+%
+% Target: IEEE journal (IEEEtran, journal mode). Compile: see paper/README.md.
+%
+% Conventions used in this draft:
+%   \TODO{...}  -- something the authors must supply/verify (esp. citations).
+%   \PENDING{...} -- a number that fills in once the multi-seed runs finish.
+%==============================================================================
+\documentclass[journal]{IEEEtran}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+
+% Find figures in the analysis/ and results/ trees without copying them.
+\graphicspath{{../analysis/}{../experiments/results/}{figures/}}
+
+% Draft helpers -- remove (or redefine to {}) before submission.
+\newcommand{\TODO}[1]{\textcolor{red}{[\textbf{TODO:} #1]}}
+\newcommand{\PENDING}[1]{\textcolor{blue}{[\emph{pending: #1}]}}
+
+\begin{document}
+
+\title{Robustness of Time--Frequency Representations for Radar Pulse
+Classification under Low Signal-to-Noise Ratio}
+
+\author{Kaan~Emre~Evci% <-this % stops a space
+\thanks{K. E. Evci is an independent researcher. \TODO{affiliation, email, ORCID}.}
+\thanks{Code and data-generation pipeline:
+\url{https://github.com/Adrift21/radar-pulse-classification}.}}
+
+\markboth{Preprint --- Manuscript in preparation}%
+{Evci: Robustness of Time--Frequency Representations for Radar Pulse Classification}
+
+\maketitle
+
+%------------------------------------------------------------------------------
+\begin{abstract}
+Automatic classification of radar pulse waveforms is a core task in electronic
+support and electronic warfare, where signals are typically observed at low
+signal-to-noise ratio (SNR). Most reported systems are evaluated near clean
+conditions, leaving open how the choice of time--frequency (TF) representation
+governs behaviour as SNR degrades. We present a controlled study that isolates
+this factor: eight radar waveform families (LFM, NLFM, Barker, Frank, polyphase
+P1--P4, Costas, CW, and stepped/frequency-hopping) are classified from three TF
+representations---the short-time Fourier transform (STFT), the Choi--Williams
+distribution (CWD), and the Wigner--Ville distribution (WVD)---using three
+architectures (a compact custom CNN, ResNet-50, and ViT-Small) on a single,
+frozen train/validation/test split spanning $-10$ to $+20$~dB. Across 40{,}000
+synthetic signals we find that the choice of representation dominates: STFT and
+CWD reach $\approx$98\% and 97\% overall accuracy respectively, while the raw WVD
+collapses to $\approx$89\%. The gap is entirely concentrated at low SNR---at
+$-10$~dB the WVD falls to $24.8\%$ (near the 8-class chance level) versus
+$\approx$85\% for STFT/CWD, a 60-point difference that vanishes above $+2$~dB. We
+attribute this to noise-driven cross-term interference in the quadratic WVD, and
+support the interpretation with a qualitative TF analysis and a per-SNR confusion
+breakdown. Architecture is a secondary factor: the 1.77M-parameter custom CNN
+matches or exceeds ResNet-50 and ViT-Small at $\sim$13$\times$ fewer parameters.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Radar pulse classification, time--frequency analysis, Wigner--Ville distribution,
+Choi--Williams distribution, deep learning, SNR robustness, electronic warfare.
+\end{IEEEkeywords}
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+\IEEEPARstart{R}{adar} emitter identification and intra-pulse modulation
+recognition are central to electronic support measures: the intercepting
+receiver must label an incoming pulse by its modulation family, often from a
+single observation and under severe noise. A widely adopted pipeline converts
+the intercepted signal into a two-dimensional time--frequency (TF) image and
+classifies it with a convolutional or transformer network, casting a signal
+problem as image recognition.
+
+A large body of work reports high accuracy with this recipe, but two questions
+are under-examined. First, the TF representation is usually fixed a priori, yet
+different representations trade time--frequency resolution against artefact
+behaviour in ways that should matter most exactly when the signal is weak.
+Second, evaluation is frequently reported at a single, favourable SNR, whereas
+operational interception is dominated by low-SNR conditions. \TODO{2--4 sentences
+positioning against specific prior radar-classification papers; cite them here.}
+
+This paper isolates the effect of the TF representation through a controlled
+comparison. We hold the dataset, the split, and the training protocol fixed and
+vary only (i) the representation---STFT, CWD, or WVD---and (ii) the
+architecture---a compact custom CNN, ResNet-50, or ViT-Small. Every model is
+trained and evaluated across the full $-10$ to $+20$~dB range, and accuracy is
+reported \emph{as a function of SNR} rather than at one operating point.
+
+\noindent\textbf{Contributions.}
+\begin{itemize}
+\item A controlled 3$\times$3 comparison (representation $\times$ architecture) of
+radar pulse classification on a shared, frozen SNR-stratified split, with
+per-SNR and per-class analysis.
+\item Evidence that the representation, not the architecture, is the dominant
+factor, and that the raw WVD collapses at low SNR while STFT and CWD remain
+robust---a 60-point accuracy gap at $-10$~dB.
+\item A mechanistic account of the collapse in terms of noise-driven cross-term
+interference, supported by qualitative TF imagery and a per-SNR confusion
+analysis.
+\item A resource-efficiency finding: a 1.77M-parameter CNN matches ImageNet-scale
+backbones on this task, at an order of magnitude fewer parameters.
+\end{itemize}
+
+%==============================================================================
+\section{Related Work}
+%==============================================================================
+\TODO{This section is a skeleton. Populate each paragraph with specific,
+verified citations from your literature review; do not rely on the placeholder
+entries in refs.bib.}
+
+\textbf{Intra-pulse modulation recognition.} \TODO{classical feature-based and
+recent deep-learning approaches to radar signal classification.}
+
+\textbf{Time--frequency representations for radar.} The STFT/spectrogram, the
+Wigner--Ville distribution~\cite{cohen1989}, and Cohen's-class kernels such as
+the Choi--Williams distribution~\cite{choi1989} are standard tools; the WVD
+offers high resolution but suffers cross-terms for multi-component signals, which
+reduced-interference distributions were designed to suppress. \TODO{cite radar
+papers that adopt each representation.}
+
+\textbf{Deep architectures.} Residual networks~\cite{he2016resnet} and vision
+transformers~\cite{dosovitskiy2021vit} are the standard backbones adapted here
+via transfer learning~\cite{wightman2019timm}. \TODO{cite prior use in radar TF
+classification.}
+
+%==============================================================================
+\section{Dataset and Signal Model}
+%==============================================================================
+The dataset comprises 40{,}000 synthetic complex-baseband signals, 5{,}000 per
+class for eight classes, generated in MATLAB. Each signal is 2{,}048 samples long
+at a $100$~MHz sample rate ($20.48~\mu$s), with pulse width drawn uniformly from
+$[1,20]~\mu$s (Frank and polyphase use $[4,20]~\mu$s so their $N^2$ chips remain
+oversampled) and randomised zero-padding position. Table~\ref{tab:classes}
+summarises the classes.
+
+Each signal is assigned a target SNR from a 16-point grid spanning $-10$ to
+$+20$~dB in $2$~dB steps. Crucially, additive white Gaussian noise (AWGN) is
+\emph{not} stored: it is applied at training time (Section~\ref{sec:method}),
+measured against the active-region (pulse) power rather than the padded frame, so
+a clean signal can be paired with different noise realisations across epochs.
+Generation is fully seeded (per-sample seed $= 42 + \text{index}$) for
+reproducibility. \TODO{state the exact per-class parameter ranges you wish to
+disclose (see docs/decisions.md for the full specification).}
+
+\begin{table}[t]
+\centering
+\caption{Radar waveform classes (0-based labels).}
+\label{tab:classes}
+\begin{tabular}{@{}cll@{}}
+\toprule
+\# & Class & Parameters \\
+\midrule
+0 & LFM & up/down chirp, $B\in[5,20]$~MHz \\
+1 & NLFM & quadratic (60\%) + sinusoidal (40\%) \\
+2 & Barker & B7/B11/B13, rectangular chip \\
+3 & Frank & $N\in\{4,6,8\}$, $f_c=0$ \\
+4 & Polyphase & P1--P4, $N\in\{4,6,8\}$, $f_c=0$ \\
+5 & Costas & $N\in\{5,6,7,8\}$, permuted hops \\
+6 & CW & single tone, random $f_c,\phi_0$ \\
+7 & SteppedFH & $N\in\{5,6,7,8\}$, monotonic staircase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Methodology}
+\label{sec:method}
+%==============================================================================
+\subsection{Time--Frequency Representations}
+For a complex baseband signal, we compute three representations, each reduced to
+a common size and converted to an identical model input so that any performance
+difference reflects information content rather than resolution.
+
+\emph{STFT.} A Hann-windowed STFT (window length 256, hop 32, 256-point FFT),
+kept two-sided and \texttt{fftshift}ed to a monotonic $[-f_s/2, f_s/2]$ axis.
+
+\emph{CWD.} The Choi--Williams distribution with kernel width $\sigma=1.0$
+(the Choi--Williams~\cite{choi1989} default), computed in the time--lag
+formulation and decimated to $(256, 64)$. Because our signals are
+mono-component, $\sigma=1.0$ suppresses cross-terms while preserving auto-terms.
+
+\emph{WVD.} The Wigner--Ville distribution, obtained as the $\sigma\!\to\!\infty$
+limit of the same implementation, at the same $(256, 64)$ resolution. This makes
+the WVD/CWD comparison differ \emph{only} in cross-term suppression.
+
+Each TF magnitude is converted to a model input by peak-relative dB scaling, a
+$[-60,0]$~dB clip mapped to $[0,1]$, and bilinear resizing to $224\times224$,
+single channel. Per-sample peak normalisation (rather than global statistics) is
+used because AWGN shifts each sample's absolute power.
+
+\subsection{Architectures}
+Three architectures share this input. The \emph{custom CNN} is a compact
+VGG-style network (five conv blocks, $1{\to}32{\to}64{\to}128{\to}256{\to}256$
+channels, global average pooling, 1.77M parameters). \emph{ResNet-50} and
+\emph{ViT-Small} are ImageNet-pretrained via \texttt{timm}~\cite{wightman2019timm},
+with the input stem adapted to a single channel; ViT-Small ($\approx$21.5M) is
+chosen close to ResNet-50 ($\approx$23.5M) so the comparison isolates the
+convolution-vs-attention paradigm rather than capacity.
+
+\subsection{Training Protocol}
+\label{sec:training}
+All models use AdamW~\cite{loshchilov2019adamw} (weight decay $10^{-4}$) with a
+3-epoch linear warmup and cosine decay, cross-entropy loss, mixed precision, up
+to 50 epochs with early stopping (patience 10 on validation loss), and a batch
+size of 64. Learning rates follow each backbone's sensitivity: $3\times10^{-4}$
+(custom CNN), $10^{-4}$ (ResNet-50), $5\times10^{-5}$ (ViT-Small, with gradient
+clipping). AWGN is re-drawn each training epoch (a different noise seed per
+epoch) so the network never overfits a fixed noise pattern; validation and test
+noise are fixed for deterministic, reproducible evaluation. Implemented in
+PyTorch~\cite{paszke2019pytorch}.
+
+%==============================================================================
+\section{Experimental Setup}
+%==============================================================================
+The 40{,}000 signals are split 70/15/15 (28{,}000/6{,}000/6{,}000), stratified
+jointly on (class, SNR) with seed 42, and this split is frozen and shared by all
+nine experiments; a fingerprint of the dataset is verified at load time to
+prevent silent drift. We report overall accuracy, macro-averaged $F_1$, and
+accuracy as a function of SNR (the 16-point grid), plus per-class metrics and
+confusion matrices. Confidence intervals in Table~\ref{tab:ci} are Wilson
+intervals over the 6{,}000-sample test set.
+
+To separate training-time randomness (weight initialisation, data ordering) from
+test-set sampling, each experiment is additionally repeated with
+\PENDING{3 seeds}; results are reported as mean\,$\pm$\,std over seeds in
+Table~\ref{tab:main}. \PENDING{multi-seed runs in progress; the values below are
+the seed-42 run, to be replaced by mean\,$\pm$\,std.}
+
+%==============================================================================
+\section{Results}
+%==============================================================================
+\subsection{Overall and Per-SNR Accuracy}
+Table~\ref{tab:main} reports overall test accuracy for all nine models. The
+ordering is unambiguous: STFT ($97.9\%$ mean over architectures) $>$ CWD
+($97.4\%$) $\gg$ WVD ($89.0\%$). Fig.~\ref{fig:robustness} shows why the overall
+average understates the effect---the three representations are indistinguishable
+above $+2$~dB and diverge sharply below it.
+
+\begin{table}[t]
+\centering
+\caption{Overall test accuracy (\%) $\pm$ std over seeds.
+\PENDING{std to be filled from the multi-seed runs.}}
+\label{tab:main}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Rep. & Arch. & Params & Test Acc. & Macro-$F_1$ \\
+\midrule
+STFT & Custom-CNN & 1.77M & \textbf{98.22} & 98.22 \\
+STFT & ResNet-50  & 23.52M & 98.00 & 98.00 \\
+STFT & ViT-Small  & 21.47M & 97.45 & 97.45 \\
+CWD  & Custom-CNN & 1.77M & 97.57 & 97.57 \\
+CWD  & ResNet-50  & 23.52M & 97.55 & 97.55 \\
+CWD  & ViT-Small  & 21.47M & 97.15 & 97.15 \\
+WVD  & Custom-CNN & 1.77M & 89.57 & 89.61 \\
+WVD  & ResNet-50  & 23.52M & 88.43 & 88.47 \\
+WVD  & ViT-Small  & 21.47M & 88.85 & 88.88 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{tf_family_snr_robustness.png}
+\caption{Accuracy vs SNR for the three TF representations (mean over the three
+architectures; shaded band = min/max across architectures). The WVD collapses
+below $-4$~dB while STFT and CWD remain robust.}
+\label{fig:robustness}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Representation means and the low-SNR gap (mean over architectures).}
+\label{tab:lowsnr}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+SNR & STFT & CWD & WVD & STFT$-$WVD \\
+\midrule
+$-10$~dB & 84.8 & 84.1 & 24.8 & \textbf{60.0} \\
+$-8$~dB  & 93.7 & 91.5 & 50.7 & 42.9 \\
+$-6$~dB  & 97.6 & --   & 76.2 & 21.4 \\
+$0$~dB   & 98.1 & --   & 96.2 & 1.9 \\
+$\geq\!+6$~dB & 99.7 & 99.6 & 99.3 & $<$1 \\
+\midrule
+Overall & 97.9 & 97.4 & 89.0 & 8.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Statistical Significance}
+On the single (seed-42) run, an unpaired two-proportion $z$-test at the custom-CNN
+level finds STFT $>$ CWD to be small but significant ($+0.65$~pt, $p=0.013$), and
+STFT/CWD $\gg$ WVD overwhelmingly ($p<10^{-70}$). A paired McNemar test on WVD
+finds the custom CNN significantly better than ResNet-50 ($p<0.001$) and ViT-Small
+($p=0.029$). These intervals cover test-set sampling only; the multi-seed study
+(Table~\ref{tab:main}) quantifies training variance. \PENDING{report the
+across-seed significance once runs complete.}
+
+\begin{table}[t]
+\centering
+\caption{Overall accuracy with 95\% Wilson confidence intervals ($n=6000$).}
+\label{tab:ci}
+\begin{tabular}{@{}llc@{}}
+\toprule
+Rep. & Arch. & Acc.\ [95\% CI] \\
+\midrule
+STFT & Custom-CNN & 98.22 [97.85, 98.52] \\
+CWD  & Custom-CNN & 97.57 [97.15, 97.93] \\
+WVD  & Custom-CNN & 89.57 [88.77, 90.32] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Resource Efficiency}
+The smallest model is also the most accurate: the 1.77M-parameter custom CNN
+(5.35~GFLOPs) attains the single best result (98.22\% on STFT), while ResNet-50
+(23.52M, 8.02~GFLOPs) and ViT-Small (21.47M, 8.40~GFLOPs) do not improve on it.
+An ImageNet-scale backbone is unnecessary for this eight-class problem.
+
+%==============================================================================
+\section{Discussion}
+%==============================================================================
+\subsection{Why the WVD Collapses at Low SNR}
+The WVD is a quadratic (bilinear) distribution and therefore generates
+cross-terms by construction. Although each signal is mono-component, the added
+AWGN produces noise$\times$signal and noise$\times$noise cross-terms whose energy
+spreads across the entire TF plane; at low SNR these dominate and bury the
+authentic signature. The STFT is linear and produces no cross-terms, and the CWD
+kernel actively suppresses them, so both degrade gracefully. Above $+2$~dB the
+noise cross-terms become negligible and all three converge.
+
+Fig.~\ref{fig:qualitative} makes the mechanism visible: at $+20$~dB the WVD
+signature is the sharpest of the three, but by $-10$~dB it is a plane-filling
+cross-term speckle, whereas the STFT ridge and CWD signature remain legible.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{qualitative_tf_lfm.png}
+\caption{The same LFM pulse under STFT/CWD/WVD (rows) as SNR drops
+(columns, $+20/0/-6/-10$~dB). The WVD signature drowns in noise-driven
+cross-terms at low SNR while STFT/CWD stay legible.}
+\label{fig:qualitative}
+\end{figure}
+
+\subsection{What the Model Confuses}
+A per-SNR confusion analysis of the WVD models shows the errors change character
+with SNR: at $-10$~dB the confusion is diffuse, with predictions smeared toward
+frequency-agile ``sink'' classes (Costas, SteppedFH, NLFM)---consistent with a
+noise-filled plane---whereas by $-6$~dB the errors concentrate on genuinely
+similar pairs (LFM$\leftrightarrow$NLFM, Frank$\leftrightarrow$Polyphase).
+
+\subsection{Limitations}
+The dataset is synthetic and mono-component; real intercepts include propagation
+effects, multiple emitters, and hardware impairments. The CWD kernel width and
+all TF grid sizes are fixed rather than tuned. \TODO{note any others you want to
+disclose.}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+On a controlled 3$\times$3 benchmark spanning $-10$ to $+20$~dB, the choice of
+time--frequency representation dominates radar pulse classification far more than
+the choice of architecture. STFT and CWD are robust across the operational SNR
+range, whereas the raw WVD collapses at low SNR---by 60 points at $-10$~dB---owing
+to noise-driven cross-term interference. A compact 1.77M-parameter CNN matches
+ImageNet-scale backbones, indicating that representation quality, not model
+capacity, is the lever for this task. \TODO{one sentence of future work, e.g.
+real intercepts, adaptive/learned kernels, or multi-representation fusion.}
+
+%==============================================================================
+\section*{Reproducibility}
+%==============================================================================
+The data-generation pipeline, training code, frozen split, per-sample test
+predictions, and the scripts that regenerate every figure and table are available
+at the repository linked on the first page.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
