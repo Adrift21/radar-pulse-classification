@@ -1,0 +1,39 @@
+experiment:
+  name: wvd_custom_cnn_seed44
+  seed: 44
+  checkpoint_root: experiments/checkpoints
+  results_root: experiments/results
+data:
+  dataset_path: data_generation/synthetic_samples/dataset.h5
+  splits_path: configs/splits.npz
+  tf_repr: wvd
+  add_noise: true
+  master_seed: 42
+  output_size:
+  - 224
+  - 224
+  db_floor: -60.0
+  num_classes: 8
+model:
+  name: custom_cnn
+  kwargs:
+    dropout: 0.5
+optim:
+  optimizer: adamw
+  lr: 0.0003
+  weight_decay: 0.0001
+  epochs: 50
+  warmup_epochs: 3
+  scheduler: cosine
+  min_lr: 1.0e-06
+  early_stopping: true
+  patience: 10
+  amp: true
+  grad_clip_norm: 0.0
+  label_smoothing: 0.0
+loader:
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2

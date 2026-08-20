@@ -294,47 +294,55 @@ PyTorch~\cite{paszke2019pytorch}.
 \section{Experimental Setup}
 %==============================================================================
 The 40{,}000 signals are split 70/15/15 (28{,}000/6{,}000/6{,}000), stratified
-jointly on (class, SNR) with seed 42, and this split is frozen and shared by all
-nine experiments; a fingerprint of the dataset is verified at load time to
-prevent silent drift. We report overall accuracy, macro-averaged $F_1$, and
-accuracy as a function of SNR (the 16-point grid), plus per-class metrics and
-confusion matrices. Confidence intervals in Table~\ref{tab:ci} are Wilson
-intervals over the 6{,}000-sample test set.
+jointly on (class, SNR) with seed 42; this split is frozen and shared by all nine
+experiments, and a fingerprint of the dataset is verified at load time to prevent
+silent drift. We report overall accuracy, macro-averaged $F_1$, and accuracy as a
+function of SNR (the 16-point grid), plus per-class metrics and confusion
+matrices.
 
-To separate training-time randomness (weight initialisation, data ordering) from
-test-set sampling, each experiment is additionally repeated with
-\PENDING{3 seeds}; results are reported as mean\,$\pm$\,std over seeds in
-Table~\ref{tab:main}. \PENDING{multi-seed runs in progress; the values below are
-the seed-42 run, to be replaced by mean\,$\pm$\,std.}
+To separate training-time randomness (weight initialisation and data ordering)
+from test-set sampling, each experiment is repeated with three seeds; the seed
+varies initialisation and ordering while the frozen split and the
+validation/test noise are held fixed. Overall accuracies (Table~\ref{tab:main})
+are reported as mean\,$\pm$\,std over these seeds. Per-SNR breakdowns
+(Table~\ref{tab:lowsnr}, Fig.~\ref{fig:robustness}) are shown for a representative
+seed, since the low-SNR gaps of tens of points dwarf the sub-1.3-point seed
+variance.
 
 %==============================================================================
 \section{Results}
 %==============================================================================
 \subsection{Overall and Per-SNR Accuracy}
-Table~\ref{tab:main} reports overall test accuracy for all nine models. The
-ordering is unambiguous: STFT ($97.9\%$ mean over architectures) $>$ CWD
-($97.4\%$) $\gg$ WVD ($89.0\%$). Fig.~\ref{fig:robustness} shows why the overall
-average understates the effect---the three representations are indistinguishable
-above $+2$~dB and diverge sharply below it.
+Table~\ref{tab:main} reports overall test accuracy for all nine models as
+mean\,$\pm$\,std over three seeds. The ordering is unambiguous and robust to the
+seed: STFT ($98.07\%$ mean over architectures) $>$ CWD ($97.26\%$) $\gg$ WVD
+($88.92\%$), and the three representation clusters do not overlap. Within a
+representation the architectures differ by at most $\sim$1 point; notably, the
+compact custom CNN and ResNet-50 are markedly more stable across seeds than
+ViT-Small, whose accuracy varies by up to $1.3$ points (largest on WVD),
+consistent with the transformer's greater sensitivity to optimisation on limited
+data. Fig.~\ref{fig:robustness} shows why the overall average understates the
+effect---the three representations are indistinguishable above $+2$~dB and diverge
+sharply below it.
 
 \begin{table}[t]
 \centering
-\caption{Overall test accuracy (\%) $\pm$ std over seeds.
-\PENDING{std to be filled from the multi-seed runs.}}
+\caption{Overall test accuracy (\%), mean $\pm$ std over three seeds
+(42, 43, 44). Best mean in bold.}
 \label{tab:main}
-\begin{tabular}{@{}llccc@{}}
+\begin{tabular}{@{}llcc@{}}
 \toprule
-Rep. & Arch. & Params & Test Acc. & Macro-$F_1$ \\
+Rep. & Arch. & Params & Test Acc.\ (\%) \\
 \midrule
-STFT & Custom-CNN & 1.77M & \textbf{98.22} & 98.22 \\
-STFT & ResNet-50  & 23.52M & 98.00 & 98.00 \\
-STFT & ViT-Small  & 21.47M & 97.45 & 97.45 \\
-CWD  & Custom-CNN & 1.77M & 97.57 & 97.57 \\
-CWD  & ResNet-50  & 23.52M & 97.55 & 97.55 \\
-CWD  & ViT-Small  & 21.47M & 97.15 & 97.15 \\
-WVD  & Custom-CNN & 1.77M & 89.57 & 89.61 \\
-WVD  & ResNet-50  & 23.52M & 88.43 & 88.47 \\
-WVD  & ViT-Small  & 21.47M & 88.85 & 88.88 \\
+STFT & Custom-CNN & 1.77M  & \textbf{98.16 $\pm$ 0.07} \\
+STFT & ResNet-50  & 23.52M & 98.10 $\pm$ 0.11 \\
+STFT & ViT-Small  & 21.47M & 97.95 $\pm$ 0.43 \\
+CWD  & Custom-CNN & 1.77M  & 97.42 $\pm$ 0.13 \\
+CWD  & ResNet-50  & 23.52M & 97.53 $\pm$ 0.03 \\
+CWD  & ViT-Small  & 21.47M & 96.84 $\pm$ 0.27 \\
+WVD  & Custom-CNN & 1.77M  & 89.79 $\pm$ 0.20 \\
+WVD  & ResNet-50  & 23.52M & 88.81 $\pm$ 0.35 \\
+WVD  & ViT-Small  & 21.47M & 88.17 $\pm$ 1.28 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -368,34 +376,38 @@ Overall & 97.9 & 97.4 & 89.0 & 8.9 \\
 \end{table}
 
 \subsection{Statistical Significance}
-On the single (seed-42) run, an unpaired two-proportion $z$-test at the custom-CNN
+We assess significance at two levels. \emph{Test-set sampling:} on a
+representative (seed-42) run, an unpaired two-proportion $z$-test at the custom-CNN
 level finds STFT $>$ CWD to be small but significant ($+0.65$~pt, $p=0.013$), and
-STFT/CWD $\gg$ WVD overwhelmingly ($p<10^{-70}$). A paired McNemar test on WVD
-finds the custom CNN significantly better than ResNet-50 ($p<0.001$) and ViT-Small
-($p=0.029$). These intervals cover test-set sampling only; the multi-seed study
-(Table~\ref{tab:main}) quantifies training variance. \PENDING{report the
-across-seed significance once runs complete.}
+STFT/CWD $\gg$ WVD overwhelmingly ($p<10^{-70}$); the corresponding 95\% Wilson
+intervals ($n=6000$) are $98.2\%\,[97.9,98.5]$, $97.6\%\,[97.2,97.9]$, and
+$89.6\%\,[88.8,90.3]$ for STFT, CWD, and WVD with the custom CNN. A paired McNemar
+test on WVD finds the custom CNN better than ResNet-50 ($p<0.001$) and ViT-Small
+($p=0.029$).
 
-\begin{table}[t]
+\emph{Training variance:} these tests cover only test-set sampling, so we also
+repeat every experiment across three seeds (Fig.~\ref{fig:multiseed}). The
+ordering survives: the STFT, CWD, and WVD accuracy clusters remain mutually
+non-overlapping, and STFT exceeds CWD by $0.81$ points---larger than their
+combined standard deviation ($0.60$~pt)---so the representation ranking is not an
+artefact of a single training run. The custom CNN remains the best or tied
+architecture at every representation while being the most seed-stable, whereas
+ViT-Small is both the weakest and, by a wide margin, the least stable.
+
+\begin{figure}[t]
 \centering
-\caption{Overall accuracy with 95\% Wilson confidence intervals ($n=6000$).}
-\label{tab:ci}
-\begin{tabular}{@{}llc@{}}
-\toprule
-Rep. & Arch. & Acc.\ [95\% CI] \\
-\midrule
-STFT & Custom-CNN & 98.22 [97.85, 98.52] \\
-CWD  & Custom-CNN & 97.57 [97.15, 97.93] \\
-WVD  & Custom-CNN & 89.57 [88.77, 90.32] \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=\columnwidth]{multiseed_accuracy.png}
+\caption{Overall accuracy per model, mean $\pm$ std over three seeds. The three
+representation clusters are mutually non-overlapping; ViT-Small shows the largest
+seed variance and the compact CNN the smallest.}
+\label{fig:multiseed}
+\end{figure}
 
 \subsection{Resource Efficiency}
 The smallest model is also the most accurate: the 1.77M-parameter custom CNN
-(5.35~GFLOPs) attains the single best result (98.22\% on STFT), while ResNet-50
-(23.52M, 8.02~GFLOPs) and ViT-Small (21.47M, 8.40~GFLOPs) do not improve on it.
-An ImageNet-scale backbone is unnecessary for this eight-class problem.
+(5.35~GFLOPs) attains the highest mean accuracy overall ($98.16\%$ on STFT), while
+ResNet-50 (23.52M, 8.02~GFLOPs) and ViT-Small (21.47M, 8.40~GFLOPs) do not improve
+on it. An ImageNet-scale backbone is unnecessary for this eight-class problem.
 
 %==============================================================================
 \section{Discussion}

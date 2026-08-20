@@ -229,23 +229,44 @@ WVD), and the Custom-CNN is significantly the best architecture where it can be 
 STFT/CWD confidence intervals are entirely disjoint from WVD's as a cluster, i.e. **the choice of
 representation matters far more than the choice of architecture.**
 
+### 5.1 Multi-seed results (training-variance)
+
+> Source: `experiments/run_multiseed.py` (3 seeds: 42, 43, 44) + `experiments/aggregate_seeds.py`.
+> Figure: `analysis/multiseed_accuracy.png`; table: `analysis/seed_summary.csv`. Protocol: the
+> seed varies weight init + data ordering; the frozen split and val/test noise are held fixed.
+
+Overall test accuracy, **mean ± std over 3 seeds**:
+
+| TF | Custom-CNN | ResNet-50 | ViT-Small |
+|---|---|---|---|
+| STFT | **98.16 ± 0.07** | 98.10 ± 0.11 | 97.95 ± 0.43 |
+| CWD | 97.42 ± 0.13 | 97.53 ± 0.03 | 96.84 ± 0.27 |
+| WVD | 89.79 ± 0.20 | 88.81 ± 0.35 | 88.17 ± 1.28 |
+
+Representation means (pooled over arch × seed): STFT **98.07 ± 0.24**, CWD **97.26 ± 0.36**,
+WVD **88.92 ± 0.97**.
+
+**Key outcomes — the fine-grained claims survive the multi-seed test:**
+1. **STFT > CWD is real, not seed noise.** Δmean = +0.81 pt > combined std 0.60 pt → the two
+   representation clusters are separable across seeds. (Single-seed §5(a) had said +0.65 pt; the
+   3-seed result confirms it.)
+2. **Representation clusters stay disjoint** (STFT/CWD ≫ WVD), as expected — that gap is huge.
+3. **ViT-Small is the least stable architecture** (std up to 1.28 on WVD vs ≤0.20 for Custom-CNN),
+   consistent with transformers' sensitivity to optimisation on limited data. Custom-CNN and
+   ResNet-50 are very stable (std ≤ 0.13 on STFT/CWD).
+4. **Custom-CNN is best or statistically tied at every representation** and the most seed-stable —
+   nuancing the earlier "significantly best" (seed-42 McNemar) into "best/tied, and most stable",
+   while the ~13× parameter advantage is unchanged.
+
 ---
 
 ## 6. Remaining Work
 
-- [ ] Place the main figure and table into the manuscript's Results section and write the captions.
-      (No `paper/` directory exists yet.)
-- [ ] **Multi-seed repeat runs (3 seeds × 9 experiments).** Runner is ready
-      (`experiments/run_multiseed.py`); the runs themselves are pending (hours each on one GPU).
-      Not required for the headline finding (the WVD collapse is far too large to be threatened by
-      seed variance), but it is what makes the fine-grained claims — STFT > CWD, and "the
-      Custom-CNN is the best architecture" — fully defensible, since the current intervals cover
-      test-set sampling error only (§5).
-      - Protocol: each seed varies weight init + data ordering (`experiment.seed`); `master_seed`
-        is held fixed so validation/test are identical across seeds. Seed 42 = the canonical
-        results already on disk, so only seeds {43, 44} need to run.
-      - Run: `python experiments/run_multiseed.py` (resumable). Then aggregate into mean ± std
-        with `python experiments/aggregate_seeds.py`.
+- [x] Manuscript drafted in `paper/` (IEEEtran): full text, verified references, all figures and
+      tables, author block, and the multi-seed numbers filled in. Compiles clean (5 pages).
+      Remaining before submission: post a preprint (TechRxiv) and a final read-through.
+- [x] **Multi-seed repeat runs (3 seeds × 9 experiments).** Done (seeds 42/43/44); see §5.1. The
+      fine-grained STFT > CWD claim survives (Δ0.81 pt > combined std 0.60 pt).
 - [ ] **STFT/CWD per-SNR confusion and paired tests.** Requires their per-sample predictions, which
       need retraining (checkpoints were pruned). WVD predictions are now versioned
       (`eval_arrays.npz`), so re-running STFT/CWD once would close this permanently.
