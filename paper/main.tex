@@ -350,15 +350,17 @@ WVD  & ViT-Small  & 21.47M & 88.17 $\pm$ 1.28 \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{tf_family_snr_robustness.png}
-\caption{Accuracy vs SNR for the three TF representations (mean over the three
-architectures; shaded band = min/max across architectures). The WVD collapses
-below $-4$~dB while STFT and CWD remain robust.}
+\caption{Accuracy vs SNR for the three TF representations (representative seed;
+mean over the three architectures, shaded band = min/max across architectures).
+The WVD collapses below $-4$~dB while STFT and CWD remain robust.}
 \label{fig:robustness}
 \end{figure}
 
 \begin{table}[t]
 \centering
-\caption{Representation means and the low-SNR gap (mean over architectures).}
+\caption{Per-SNR accuracy (\%), representation means over architectures for a
+representative seed. The STFT$-$WVD gap closes from 60 points at $-10$~dB to under
+one point above $+2$~dB.}
 \label{tab:lowsnr}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -366,11 +368,11 @@ SNR & STFT & CWD & WVD & STFT$-$WVD \\
 \midrule
 $-10$~dB & 84.8 & 84.1 & 24.8 & \textbf{60.0} \\
 $-8$~dB  & 93.7 & 91.5 & 50.7 & 42.9 \\
-$-6$~dB  & 97.6 & --   & 76.2 & 21.4 \\
-$0$~dB   & 98.1 & --   & 96.2 & 1.9 \\
+$-6$~dB  & 97.6 & 95.6 & 76.2 & 21.4 \\
+$-4$~dB  & 97.1 & 96.6 & 87.9 & 9.3 \\
+$-2$~dB  & 98.5 & 98.1 & 95.3 & 3.2 \\
+$0$~dB   & 98.1 & 97.9 & 96.2 & 1.9 \\
 $\geq\!+6$~dB & 99.7 & 99.6 & 99.3 & $<$1 \\
-\midrule
-Overall & 97.9 & 97.4 & 89.0 & 8.9 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -391,8 +393,9 @@ ordering survives: the STFT, CWD, and WVD accuracy clusters remain mutually
 non-overlapping, and STFT exceeds CWD by $0.81$ points---larger than their
 combined standard deviation ($0.60$~pt)---so the representation ranking is not an
 artefact of a single training run. The custom CNN remains the best or tied
-architecture at every representation while being the most seed-stable, whereas
-ViT-Small is both the weakest and, by a wide margin, the least stable.
+architecture at every representation and, together with ResNet-50, is far more
+seed-stable than ViT-Small, which is both the weakest and, by a wide margin, the
+least stable.
 
 \begin{figure}[t]
 \centering
@@ -462,10 +465,10 @@ additive white Gaussian applied per pulse (a single look), without clutter,
 co-channel interference, or non-Gaussian effects, and without pulse-train
 integration that an operational receiver might exploit. The CWD kernel width and
 all TF grid sizes are fixed at sensible defaults rather than tuned, so the reported
-gaps reflect standard, untuned representations. Finally, the significance analysis
-in Section~V accounts for test-set sampling; the multi-seed study
-(Table~\ref{tab:main}) is what bounds training-time variance, and the fine-grained
-ordering among the strong configurations should be read in that light.
+gaps reflect standard, untuned representations. Finally, our significance analysis
+accounts for test-set sampling while the multi-seed study (Table~\ref{tab:main})
+bounds training-time variance; the fine-grained ordering among the strong
+configurations should be read in that light.
 
 %==============================================================================
 \section{Conclusion}
