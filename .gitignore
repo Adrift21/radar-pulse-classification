@@ -141,3 +141,6 @@ configs/generated/
 .env
 secrets.yaml
 preprocessing/**/tests/outputs/
+
+# Local PDF render previews (poppler)
+paper/_preview/

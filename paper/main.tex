@@ -473,6 +473,16 @@ than the linear STFT. The STFT is therefore both the most accurate representatio
 and the cheapest to compute, which together with the compact CNN makes
 STFT\,$+$\,custom-CNN the most practical configuration by a clear margin.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{wvd_lowsnr_confusion_custom_cnn.png}
+\caption{Row-normalised confusion for WVD (custom CNN) at $-10$, $-8$, and
+$-6$~dB. The errors transition from diffuse and noise-driven at $-10$~dB (mass
+scattered toward the frequency-agile classes) to structured intra-family
+confusion by $-6$~dB, where the matrix is nearly diagonal.}
+\label{fig:confusion}
+\end{figure*}
+
 %==============================================================================
 \section{Discussion}
 %==============================================================================
@@ -505,16 +515,6 @@ predictions smeared toward frequency-agile ``sink'' classes (Costas, SteppedFH,
 NLFM)---consistent with a noise-filled plane---whereas by $-6$~dB the errors
 concentrate on genuinely similar pairs (LFM$\leftrightarrow$NLFM,
 Frank$\leftrightarrow$Polyphase) and the matrix is nearly diagonal.
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{wvd_lowsnr_confusion_custom_cnn.png}
-\caption{Row-normalised confusion for WVD (custom CNN) at $-10$, $-8$, and
-$-6$~dB. The errors transition from diffuse and noise-driven at $-10$~dB (mass
-scattered toward the frequency-agile classes) to structured intra-family
-confusion by $-6$~dB, where the matrix is nearly diagonal.}
-\label{fig:confusion}
-\end{figure*}
 
 \subsection{Limitations}
 Several factors bound the scope of these conclusions. The dataset is synthetic and
